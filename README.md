@@ -32,10 +32,11 @@ O guia completo, com o raciocínio por trás de cada fase, está em [`metodologi
 ├── README.md
 ├── metodologia-echo.md          # o método, explicado
 ├── template-especificacao.md    # template de spec em 3 níveis (micro/padrão/complexo)
-└── skills/
-    ├── especificar/SKILL.md     # Fase E — gera e trava a especificação
-    ├── planejar/SKILL.md        # Fase C — traduz spec em plano aprovável
-    └── homologar/SKILL.md       # Fase H — verifica critérios + cobra revisão arquitetural
+├── propostas/
+│   └── expansao-para-times.md   # hipótese não validada, não é mudança nas skills
+├── especificar/SKILL.md         # Fase E — gera e trava a especificação
+├── planejar/SKILL.md            # Fase C — traduz spec em plano aprovável
+└── homologar/SKILL.md           # Fase H — verifica critérios + cobra revisão arquitetural
 ```
 
 As três skills são feitas pra Claude Code (ou qualquer harness compatível com o formato `SKILL.md`), mas o método em si não depende de nenhuma ferramenta específica — dá pra aplicar manualmente com qualquer assistente de IA, só copiando os templates.
@@ -44,7 +45,7 @@ As três skills são feitas pra Claude Code (ou qualquer harness compatível com
 
 **Claude Code:**
 ```bash
-cp -r skills/especificar skills/planejar skills/homologar ~/.claude/skills/
+cp -r especificar planejar homologar ~/.claude/skills/
 ```
 Ou copie para `.claude/skills/` na raiz de um projeto específico, se quiser escopo local em vez de global.
 
@@ -65,7 +66,7 @@ Depois de instaladas, elas se encadeiam sozinhas: `especificar` encaminha pra `p
 
 - **Fase O ainda não tem skill própria** — é prática manual de retrospectiva por enquanto.
 - **Enforcement ainda é probabilístico, não determinístico.** As três skills são prompt bem estruturado, não hook. Nada aqui *bloqueia* de verdade se o modelo (ou eu) decidir ignorar — um hook `PreToolUse` que trava a primeira edição de código sem spec salva é o próximo passo natural pra fechar essa lacuna.
-- **Zero validação em escala.** Isso foi desenhado, não testado sob pressão real de prazo ainda. Uso pessoal primeiro, difusão pro time só depois de eu conseguir defender cada parte com exemplo real, não com teoria.
+- **Zero validação em escala.** Isso foi desenhado, não testado sob pressão real de prazo ainda. Uso pessoal primeiro, difusão pro time só depois de eu conseguir defender cada parte com exemplo real, não com teoria. Raciocínio inicial (ainda hipotético, não implementado) sobre o que mudaria pra 10+ pessoas está registrado em [`propostas/expansao-para-times.md`](./propostas/expansao-para-times.md).
 
 ## Licença
 
