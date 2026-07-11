@@ -34,6 +34,8 @@ Se algum critério não tiver teste correspondente:
 
 ## Passo 3 — Rodar a verificação e reportar com evidência
 
+Antes de executar qualquer comando que possa alterar ou apagar dados (testes que truncam/limpam tabelas, migrações, scripts de seed, fixtures de banco), confirme explicitamente que o alvo é um ambiente isolado do usado pelo desenvolvimento/uso real — não assuma isolamento por analogia com outro projeto ou por convenção implícita. Verifique o nome do banco/schema, a variável de ambiente, ou o que for necessário para ter certeza antes de rodar. Isso não é uma garantia automática do método — é uma responsabilidade de execução sua, no momento em que o comando roda.
+
 Execute a suíte de testes relevante (via bash) e reporte o resultado **real** — passou, falhou, ou não rodou por algum motivo. Nunca diga "deve ter funcionado" sem ter rodado. Se algo falhar:
 1. Não avance para o Passo 4.
 2. Reporte a falha ao usuário com o resultado exato.
