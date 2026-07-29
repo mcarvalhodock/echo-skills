@@ -1,0 +1,14 @@
+# Cinto de segurança, não mecanismo principal.
+#
+# Sub-specs do fatiamento por domínio (Fase C) são geradas FORA de qualquer
+# repositório — em ~/.echo/fatias/<repositório>/<spec>/ — justamente para que
+# a sanitização não dependa de um .gitignore estar correto em cada projeto.
+# Não se ignora o que nunca entrou.
+#
+# Esta entrada cobre apenas o caso de alguém apontar a geração para dentro do
+# workspace por engano.
+.echo/fatias/
+
+# O que NÃO é ignorado, e por quê:
+#   .echo/manifesto.md        — declaração de ativação local, pertence ao repositório
+#   .echo/pressao-catalogo.md — evidência de evolução do catálogo, precisa acumular ao longo do tempo
