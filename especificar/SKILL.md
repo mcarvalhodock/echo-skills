@@ -59,6 +59,11 @@ Preencha em conjunto com o usuário em poucas trocas de mensagem. Não expanda a
 -
 -
 
+### Domínios envolvidos
+| item | classificação |
+|---|---|
+| [cada critério de aceite e cada caso de borda acima] | `dominio` / cross-cutting retido / miolo |
+
 ### Fora de escopo
 [O que NÃO deve ser feito aqui, mesmo que pareça relacionado]
 
@@ -74,7 +79,7 @@ Preencha em conjunto com o usuário em poucas trocas de mensagem. Não expanda a
 ```
 
 ### Nível 3 — Complexo
-Tudo do Nível 2, mais:
+Tudo do Nível 2 — incluindo **Domínios envolvidos** — mais:
 ```markdown
 ### Alternativas consideradas
 [Pelo menos uma alternativa de design e por que foi descartada]
@@ -92,12 +97,41 @@ Tudo do Nível 2, mais:
 [O que ainda não se sabe — nomeie explicitamente em vez de supor]
 ```
 
+## Passo 2.1 — Classificar por domínio (só Nível 2 e 3)
+
+Nível 1 não tem esta etapa — a válvula de escape do método não engorda.
+
+**Leia o catálogo antes de conduzir.** O vocabulário canônico está em `dominios.md` na raiz do repositório do método. Nunca reproduza a lista de memória e nunca a copie para dentro de uma spec: fonte duplicada é defeito, e é ela que quebra a evolução do catálogo.
+
+**Verifique a ativação local.** Se o repositório de trabalho tiver `.echo/manifesto.md`, ofereça **apenas os domínios ativos** declarados nele, e trate como obrigatórios os que ele marcar assim. Se não existir manifesto, avise **uma vez** — "este repositório não tem `.echo/manifesto.md`; usando o catálogo canônico inteiro" — e siga normalmente. Ausência de manifesto degrada, não bloqueia; não peça para criar um no meio da spec.
+
+**Classifique cada critério de aceite e cada caso de borda** em uma de três opções:
+
+- **domínio(s)** — pertence a uma ou mais disciplinas do catálogo; é candidato a delegação
+- **cross-cutting retido** — toca vários domínios de forma inseparável, então **não se delega**; fica com o orquestrador
+- **miolo** — regra de negócio, comportamento central; fica com o dono da demanda
+
+`miolo` é classificação válida e frequente. Uma spec inteiramente miolo é resultado legítimo — significa que a demanda não tem aspecto delegável, só corpo. Não invente domínio para preencher a tabela.
+
+Um critério pode pertencer a mais de um domínio. Mas se ele marca vários e eles são inseparáveis, isso não é multi-domínio: é cross-cutting retido. E se marca vários que *são* separáveis, verifique se não são dois critérios diferentes escritos como um só.
+
+**Domínio sem item apontando pra ele** é sinal de decomposição vaga — peça refino antes de fechar.
+
+### Recusa de domínio fora do catálogo
+
+Se o usuário propuser um nome que não está no catálogo (ou não está ativo no manifesto), **recuse e ofereça a lista canônica**. Não aceite "outros", "diversos" nem nomes inventados — é a recusa que preserva a precisão da spec.
+
+Mas a recusa **grava**. Acrescente uma linha em `.echo/pressao-catalogo.md` do repositório de trabalho com: data, spec em curso, nome tentado exatamente como foi proposto, o que se queria expressar em uma frase, e o domínio oferecido em substituição. Se o arquivo não existir, crie com o cabeçalho descrito em `dominios.md`.
+
+Esse log é o único instrumento de evolução do catálogo. Anotação informal que morre no fim da conversa não serve — a pressão sobre o vocabulário é o dado mais valioso que o método produz.
+
 ## Passo 3 — Revisar antes de confirmar
 
 Antes de considerar a spec pronta, verifique com o usuário:
 - Cada critério de aceite é testável, não vago?
 - "Fora de escopo" foi preenchido de verdade, não deixado em branco?
 - Se o risco for alto (Nível 3), as perguntas em aberto foram nomeadas, não escondidas?
+- **Gate de domínio (N2/N3):** todo critério de aceite e todo caso de borda tem classificação? Um item sem classificação é uma pergunta pendurada como qualquer outra — resolva antes de fechar, não depois.
 - **Gate de fechamento:** existe alguma decisão técnica ou de ambiente ainda não resolvida em nenhum campo? Se sim, pergunte agora, uma por uma se necessário, e só apresente a versão final da spec depois de todas resolvidas.
 
 Se algo estiver vago, não avance — peça pra especificar melhor esse ponto específico antes de seguir. A spec só é considerada concluída quando pode ser lida do início ao fim sem nenhuma decisão pendente escondida nela ou depois dela.
