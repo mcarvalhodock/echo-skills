@@ -41,6 +41,19 @@ Fora de escopo:
 -
 -
 
+### Domínios envolvidos
+[Classifique **cada** critério de aceite e **cada** caso de borda acima em uma de três opções. Catálogo canônico e regras em [`dominios.md`](./dominios.md) — não invente nome fora dele. Se o repositório tiver `.echo/manifesto.md`, use só os domínios ativos lá.]
+
+| item | classificação |
+|---|---|
+| [critério ou caso de borda] | `dominio` / cross-cutting retido / miolo |
+
+- **domínio** — pertence a uma disciplina do catálogo, candidato a delegação a especialista
+- **cross-cutting retido** — toca vários domínios de forma inseparável; **não se delega**, fica com o orquestrador
+- **miolo** — regra de negócio, comportamento central; fica com o dono da demanda
+
+Marcar tudo como `miolo` é resultado legítimo, não erro de preenchimento. Domínio listado sem nenhum item apontando pra ele é sinal de decomposição vaga — refine antes de fechar.
+
 ### Fora de escopo
 [O que a IA/você NÃO deve fazer aqui, mesmo que pareça relacionado]
 
@@ -59,7 +72,7 @@ Fora de escopo:
 
 ## Nível 3 — Complexo (features de dias/semanas, mudança arquitetural, dado sensível, difícil de reverter)
 
-Tudo do Nível 2, mais:
+Tudo do Nível 2 — incluindo a seção **Domínios envolvidos**, com a mesma estrutura e as mesmas três classificações — mais:
 
 ```markdown
 ### Alternativas consideradas
@@ -101,6 +114,20 @@ Hoje o cancelamento só é feito manualmente pelo suporte — está gerando fila
 - Usuário sem assinatura ativa tenta cancelar
 - Assinatura já cancelada, tentativa duplicada
 - Cancelamento no mesmo dia da renovação
+
+### Domínios envolvidos
+
+| item | classificação |
+|---|---|
+| Cancela apenas a própria assinatura | `segurança` |
+| Permanece ativa até o fim do período pago | miolo |
+| Cobrança futura é bloqueada | miolo |
+| Confirmação por e-mail | `integração` |
+| Usuário sem assinatura ativa | miolo |
+| Tentativa duplicada | miolo |
+| Cancelamento no dia da renovação | cross-cutting retido |
+
+Leitura: a demanda é majoritariamente miolo, com dois aspectos delegáveis pequenos. O caso do dia da renovação é retido porque a regra de corte, a consistência do registro e o webhook de billing são a mesma decisão — fatiar produziria três respostas parciais que alguém teria que reconciliar depois.
 
 ### Fora de escopo
 - Reembolso proporcional (feature separada)
