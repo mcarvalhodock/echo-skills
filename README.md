@@ -32,6 +32,10 @@ O guia completo, com o raciocínio por trás de cada fase, está em [`metodologi
 ├── README.md
 ├── metodologia-echo.md          # o método, explicado
 ├── template-especificacao.md    # template de spec em 3 níveis (micro/padrão/complexo)
+├── dominios.md                  # catálogo canônico de domínios — fonte única
+├── .echo/
+│   ├── manifesto.md             # quais domínios existem NESTE repo
+│   └── pressao-catalogo.md      # log de recusas — instrumento de evolução do catálogo
 ├── propostas/
 │   └── expansao-para-times.md   # hipótese não validada, não é mudança nas skills
 ├── especificar/SKILL.md         # Fase E — gera e trava a especificação
@@ -57,10 +61,11 @@ Depois de instaladas, elas se encadeiam sozinhas: `especificar` encaminha pra `p
 
 1. Peça a tarefa normalmente — a skill `especificar` entra automaticamente (ou chame `/especificar`).
 2. Ela classifica o risco (micro/padrão/complexo) e preenche a spec com você, sem deixar nenhuma decisão pendurada pra depois.
-3. Pra tarefas Nível 2+, ela encaminha pra `planejar`, que gera um roteiro de implementação — você aprova ou ajusta antes de qualquer código.
-4. Código é escrito estritamente dentro do plano aprovado. Desvio no meio do caminho exige nova aprovação, não improviso silencioso.
-5. Ao final, `homologar` confere cada critério de aceite contra teste real e conduz um checklist de revisão arquitetural — que você responde, ela não responde por você.
-6. Fase O é sua: o que quebrou que a spec não previu vira ajuste no próximo `especificar`.
+3. Em Nível 2+, cada critério e caso de borda é classificado por [domínio](./dominios.md) — ou como cross-cutting retido, ou como miolo. Domínio é endereço de quem executa, não categoria do trabalho.
+4. Pra tarefas Nível 2+, ela encaminha pra `planejar`, que gera um roteiro de implementação — você aprova ou ajusta antes de qualquer código. É lá que se decide se a demanda se fatia entre especialistas, por critério próprio: pluralidade, independência e massa — nunca pelo nível de risco.
+5. Código é escrito estritamente dentro do plano aprovado. Desvio no meio do caminho exige nova aprovação, não improviso silencioso.
+6. Ao final, `homologar` confere cada critério de aceite contra teste real e conduz um checklist de revisão arquitetural — que você responde, ela não responde por você.
+7. Fase O é sua: o que quebrou que a spec não previu vira ajuste no próximo `especificar`.
 
 ## O que ainda falta (honestamente)
 

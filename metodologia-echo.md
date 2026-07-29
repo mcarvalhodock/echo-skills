@@ -44,6 +44,8 @@ Antes de abrir qualquer chat com IA, escreva:
 
 O tamanho escala em 3 níveis — micro, padrão, complexo — conforme o risco da tarefa. Template completo em [`template-especificacao.md`](./template-especificacao.md).
 
+**Marcação por domínio (Nível 2+):** cada critério e caso de borda é classificado como pertencente a um domínio, cross-cutting retido ou miolo. O domínio não descreve o trabalho — ele endereça quem sabe executá-lo, e vale igual para uma pessoa e para um subagente. Catálogo e regras em [`dominios.md`](./dominios.md). Marcar é barato e serve mesmo que ninguém delegue nada: quando quebrar, você já sabe quem chamar.
+
 **Sinal de alerta:** se você está escrevendo o prompt pra IA e a especificação ao mesmo tempo, misturando os dois — pare. São coisas diferentes. A especificação é sua, pertence a você e ao projeto. O prompt é só a forma de comunicar parte dela pra uma ferramenta específica, e vai mudar quando a ferramenta mudar.
 
 **Regra de fechamento:** uma spec nunca é declarada pronta com decisão técnica pendurada — nem no meio dela, nem como pergunta solta depois. Se surgir uma decisão durante o preenchimento, resolve ali, na hora.
@@ -59,6 +61,8 @@ Pra tarefas de risco médio/alto, a spec sozinha não é suficiente — ela diz 
 - Gere um plano de implementação: passos em ordem, arquivos afetados, mapeamento explícito de cada passo com o critério de aceite que ele cobre.
 - Aprove o plano de verdade antes de qualquer linha ser escrita — não é aprovação automática, é revisão real.
 - Código é escrito estritamente dentro do plano aprovado. Se algo exigir desviar no meio do caminho, isso é sinalizado e reaprovado — nunca improvisado silenciosamente.
+
+**Fatiamento (quando aplicável):** é aqui, não na spec, que se decide se a marcação por domínio vira delegação real a especialistas. A decisão tem critério próprio — pluralidade, independência e massa — e **não depende do nível de risco**: um N3 mono-domínio não se fatia, um N2 plural se fatia bem. Quando fatia, cada domínio recebe uma sub-spec descartável, e a remontagem é reconciliação contra a spec-mãe, que segue sendo a única fonte de verdade.
 
 Regras que não podem depender do julgamento do modelo (segurança, padrões não-negociáveis, comandos destrutivos) viram **harness determinístico** — hooks, linters, CI, validação automática — não instrução em prompt. Prompt pede; harness garante.
 
