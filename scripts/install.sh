@@ -360,13 +360,154 @@ install_skills() {
     done
 }
 
-install_ci() {
-    write_step warn "install_ci: to be implemented in commit 3 (Plan step 6)"
-    if [[ "$ARG_DRY_RUN" == 'true' ]]; then
-        write_step dryrun "  - would copy tooling/ci/*.yml to $ARG_TARGET_REPO/.github/workflows/ (warning mode)"
-        write_step dryrun "  - would copy tooling/ci/scripts/ and tests/ to $ARG_TARGET_REPO/tooling/ci/"
-        write_step dryrun "  - would create $ARG_TARGET_REPO/.sle/manifesto.md from skeleton (if absent)"
+apply_warning_mode() {
+    local input_file="$1"
+    awk '
+        BEGIN { pending_indent = ""; pending = 0 }
+        {
+            if (pending) {
+                if ($0 ~ /^[[:space:]]*continue-on-error[[:space:]]*:[[:space:]]*true/) {
+                    pending = 0
+                } else if ($0 ~ /^[[:space:]]*-[[:space:]]/) {
+                    print pending_indent "  continue-on-error: true"
+                    pending = 0
+                } else if ($0 !~ /^[[:space:]]/ || $0 ~ /^[[:space:]]*$/) {
+                    pending = 0
+                } else {
+                    # continue accumulating within same step
+                    if (match($0, /^[[:space:]]+/)) {
+                        cur_indent_len = RLENGTH
+                        pending_indent_len = length(pending_indent)
+                        if (cur_indent_len <= pending_indent_len) {
+                            print pending_indent "  continue-on-error: true"
+                            pending = 0
+                        }
+                    }
+                }
+            }
+
+            print $0
+
+            if (match($0, /^([[:space:]]+)-[[:space:]]+(name|uses):/, arr)) {
+                pending_indent = arr[1]
+                pending = 1
+            }
+        }
+        END {
+            if (pending) {
+                print pending_indent "  continue-on-error: true"
+            }
+        }
+    ' "$input_file"
+}
+
+copy_text_file() {
+    local dest_path="$1"
+    local content="$2"
+
+    if [[ -e "$dest_path" && "$ARG_FORCE" != 'true' ]]; then
+        write_step skipped "target file exists (skipped): $dest_path"
+        return 0
     fi
+
+    if [[ "$ARG_DRY_RUN" == 'true' ]]; then
+        write_step dryrun "would write $dest_path"
+        return 0
+    fi
+
+    local parent
+    parent=$(dirname "$dest_path")
+    mkdir -p "$parent"
+
+    local staging="$dest_path.sle-staging"
+    printf '%s' "$content" > "$staging"
+
+    [[ -e "$dest_path" ]] && rm -f "$dest_path"
+    mv "$staging" "$dest_path"
+
+    write_step action "wrote $dest_path"
+    ARTIFACTS_CREATED+=("$dest_path")
+}
+
+copy_directory_tree() {
+    local source_dir="$1"
+    local dest_dir="$2"
+
+    if [[ ! -d "$source_dir" ]]; then
+        write_step error "source directory missing: $source_dir"
+        return 1
+    fi
+
+    if [[ -e "$dest_dir" && "$ARG_FORCE" != 'true' ]]; then
+        write_step skipped "directory exists (skipped): $dest_dir"
+        return 0
+    fi
+
+    if [[ "$ARG_DRY_RUN" == 'true' ]]; then
+        write_step dryrun "would copy tree $source_dir -> $dest_dir"
+        return 0
+    fi
+
+    local staging="$dest_dir.sle-staging"
+    [[ -e "$staging" ]] && rm -rf "$staging"
+
+    mkdir -p "$(dirname "$dest_dir")"
+    cp -R "$source_dir" "$staging"
+
+    [[ -e "$dest_dir" ]] && rm -rf "$dest_dir"
+    mv "$staging" "$dest_dir"
+
+    write_step action "installed tree $source_dir -> $dest_dir"
+    ARTIFACTS_CREATED+=("$dest_dir")
+}
+
+create_manifesto_skeleton() {
+    local manifesto_path="$ARG_TARGET_REPO/.sle/manifesto.md"
+    if [[ -e "$manifesto_path" ]]; then
+        write_step skipped "manifest already exists (preserved): $manifesto_path"
+        return 0
+    fi
+
+    local template_path="$SOURCE_ROOT/scripts/templates/manifesto-esqueleto.md"
+    if [[ ! -e "$template_path" ]]; then
+        write_step error "manifest template missing: $template_path"
+        return 1
+    fi
+
+    if [[ "$ARG_DRY_RUN" == 'true' ]]; then
+        write_step dryrun "would create $manifesto_path from skeleton"
+        return 0
+    fi
+
+    mkdir -p "$ARG_TARGET_REPO/.sle"
+    cp "$template_path" "$manifesto_path"
+    write_step action "created $manifesto_path (fill <preencher: ...> placeholders)"
+    ARTIFACTS_CREATED+=("$manifesto_path")
+}
+
+install_ci() {
+    local source_ci="$SOURCE_ROOT/tooling/ci"
+    local workflows_dir="$ARG_TARGET_REPO/.github/workflows"
+    local target_ci_dir="$ARG_TARGET_REPO/tooling/ci"
+
+    write_step info "installing CI workflows to: $workflows_dir (warning mode by default)"
+
+    local yaml_file
+    for yaml_file in "$source_ci"/*.yml; do
+        [[ -e "$yaml_file" ]] || continue
+        local name
+        name=$(basename "$yaml_file")
+        local dest_path="$workflows_dir/$name"
+        local transformed
+        transformed=$(apply_warning_mode "$yaml_file")
+        copy_text_file "$dest_path" "$transformed"
+    done
+
+    for subdir in scripts tests; do
+        copy_directory_tree "$source_ci/$subdir" "$target_ci_dir/$subdir"
+    done
+
+    create_manifesto_skeleton
 }
 
 install_hooks() {

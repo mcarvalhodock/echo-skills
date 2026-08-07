@@ -328,14 +328,170 @@ function Install-Skills {
     }
 }
 
+function ConvertTo-WarningModeYaml {
+    param([string[]]$Lines)
+
+    $out = New-Object System.Collections.Generic.List[string]
+    $stepPattern = '^(\s+)-\s+(name|uses):'
+
+    for ($i = 0; $i -lt $Lines.Count; $i++) {
+        $line = $Lines[$i]
+        $out.Add($line)
+
+        if ($line -match $stepPattern) {
+            $indent = $Matches[1]
+            $insertion = "$indent  continue-on-error: true"
+
+            $alreadyPresent = $false
+            for ($j = $i + 1; $j -lt $Lines.Count; $j++) {
+                $next = $Lines[$j]
+                if ([string]::IsNullOrWhiteSpace($next)) { continue }
+                if ($next -match '^\s*-\s') { break }
+                if ($next.TrimStart() -notmatch '^-') {
+                    $nextIndent = ($next -replace '\S.*$', '')
+                    if ($nextIndent.Length -le $indent.Length) { break }
+                    if ($next -match '^\s+continue-on-error\s*:\s*true') {
+                        $alreadyPresent = $true
+                        break
+                    }
+                }
+            }
+
+            if (-not $alreadyPresent) {
+                $out.Add($insertion)
+            }
+        }
+    }
+
+    return $out.ToArray()
+}
+
+function Copy-TextFile {
+    param(
+        [string]$SourcePath,
+        [string]$DestPath,
+        [hashtable]$Ctx,
+        [string[]]$TransformedContent
+    )
+
+    if ((Test-Path $DestPath) -and -not $Ctx.Force) {
+        Write-Step "target file exists (skipped): $DestPath" 'skipped'
+        return
+    }
+
+    if ($Ctx.DryRun) {
+        Write-Step "would write $DestPath" 'dryrun'
+        return
+    }
+
+    $parent = Split-Path -Parent $DestPath
+    New-Item -ItemType Directory -Path $parent -Force | Out-Null
+
+    $staging = "$DestPath.sle-staging"
+    if ($TransformedContent) {
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllLines($staging, $TransformedContent, $utf8NoBom)
+    } else {
+        Copy-Item -Path $SourcePath -Destination $staging -Force
+    }
+
+    if (Test-Path $DestPath) {
+        Remove-Item -Path $DestPath -Force
+    }
+    Move-Item -Path $staging -Destination $DestPath
+
+    Write-Step "wrote $DestPath" 'action'
+    $Script:ARTIFACTS_CREATED += $DestPath
+}
+
+function Copy-DirectoryTree {
+    param(
+        [string]$SourceDir,
+        [string]$DestDir,
+        [hashtable]$Ctx
+    )
+
+    if (-not (Test-Path $SourceDir)) {
+        Write-Step "source directory missing: $SourceDir" 'error'
+        return $false
+    }
+
+    if ((Test-Path $DestDir) -and -not $Ctx.Force) {
+        Write-Step "directory exists (skipped): $DestDir" 'skipped'
+        return $true
+    }
+
+    if ($Ctx.DryRun) {
+        Write-Step "would copy tree $SourceDir -> $DestDir" 'dryrun'
+        return $true
+    }
+
+    $staging = "$DestDir.sle-staging"
+    if (Test-Path $staging) { Remove-Item -Path $staging -Recurse -Force }
+
+    New-Item -ItemType Directory -Path (Split-Path -Parent $DestDir) -Force | Out-Null
+    Copy-Item -Path $SourceDir -Destination $staging -Recurse -Force
+
+    if (Test-Path $DestDir) { Remove-Item -Path $DestDir -Recurse -Force }
+    Move-Item -Path $staging -Destination $DestDir
+
+    Write-Step "installed tree $SourceDir -> $DestDir" 'action'
+    $Script:ARTIFACTS_CREATED += $DestDir
+    return $true
+}
+
+function New-ManifestoSkeleton {
+    param([hashtable]$Ctx)
+
+    $manifestoPath = Join-Path $Ctx.TargetRepo '.sle\manifesto.md'
+    if (Test-Path $manifestoPath) {
+        Write-Step "manifest already exists (preserved): $manifestoPath" 'skipped'
+        return
+    }
+
+    $templatePath = Join-Path $Script:SOURCE_ROOT 'scripts\templates\manifesto-esqueleto.md'
+    if (-not (Test-Path $templatePath)) {
+        Write-Step "manifest template missing: $templatePath" 'error'
+        return
+    }
+
+    if ($Ctx.DryRun) {
+        Write-Step "would create $manifestoPath from skeleton" 'dryrun'
+        return
+    }
+
+    $sleDir = Join-Path $Ctx.TargetRepo '.sle'
+    New-Item -ItemType Directory -Path $sleDir -Force | Out-Null
+    Copy-Item -Path $templatePath -Destination $manifestoPath -Force
+    Write-Step "created $manifestoPath (fill <preencher: ...> placeholders)" 'action'
+    $Script:ARTIFACTS_CREATED += $manifestoPath
+}
+
 function Install-Ci {
     param([hashtable]$Ctx)
-    Write-Step "installCi: to be implemented in commit 3 (Plan step 6)" 'warn'
-    if ($Ctx.DryRun) {
-        Write-Step "  - would copy tooling/ci/*.yml to $($Ctx.TargetRepo)/.github/workflows/ (warning mode)" 'dryrun'
-        Write-Step "  - would copy tooling/ci/scripts/ and tests/ to $($Ctx.TargetRepo)/tooling/ci/" 'dryrun'
-        Write-Step "  - would create $($Ctx.TargetRepo)/.sle/manifesto.md from skeleton (if absent)" 'dryrun'
+
+    $sourceCi = Join-Path $Script:SOURCE_ROOT 'tooling\ci'
+    $workflowsDir = Join-Path $Ctx.TargetRepo '.github\workflows'
+    $targetCiDir = Join-Path $Ctx.TargetRepo 'tooling\ci'
+
+    Write-Step "installing CI workflows to: $workflowsDir (warning mode by default)" 'info'
+
+    $yamlFiles = Get-ChildItem -Path $sourceCi -Filter '*.yml' -File
+    foreach ($yamlFile in $yamlFiles) {
+        $destPath = Join-Path $workflowsDir $yamlFile.Name
+        $lines = Get-Content -Path $yamlFile.FullName -Encoding UTF8
+        $transformed = ConvertTo-WarningModeYaml -Lines $lines
+        Copy-TextFile -SourcePath $yamlFile.FullName -DestPath $destPath `
+            -Ctx $Ctx -TransformedContent $transformed
     }
+
+    foreach ($subdir in @('scripts', 'tests')) {
+        $srcSub = Join-Path $sourceCi $subdir
+        $dstSub = Join-Path $targetCiDir $subdir
+        Copy-DirectoryTree -SourceDir $srcSub -DestDir $dstSub -Ctx $Ctx | Out-Null
+    }
+
+    New-ManifestoSkeleton -Ctx $Ctx
 }
 
 function Install-Hooks {
