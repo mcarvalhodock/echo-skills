@@ -494,19 +494,100 @@ function Install-Ci {
     New-ManifestoSkeleton -Ctx $Ctx
 }
 
+function Add-GitignoreEntry {
+    param([hashtable]$Ctx, [string]$Entry)
+
+    $gitignorePath = Join-Path $Ctx.TargetRepo '.gitignore'
+
+    if ((Test-Path $gitignorePath)) {
+        $content = Get-Content -Path $gitignorePath -Encoding UTF8
+        $normalized = $content | ForEach-Object { $_.Trim() }
+        if ($normalized -contains $Entry) {
+            Write-Step ".gitignore already contains '$Entry' (skipped)" 'skipped'
+            return
+        }
+    } else {
+        $content = @()
+    }
+
+    if ($Ctx.DryRun) {
+        Write-Step "would add '$Entry' to $gitignorePath" 'dryrun'
+        return
+    }
+
+    $updated = @()
+    $updated += $content
+    if ($content -and $content[-1].Trim() -ne '') {
+        $updated += ''
+    }
+    $updated += "# SLE marker-file: role da sessao ativa (local, nao versionado)"
+    $updated += $Entry
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllLines($gitignorePath, $updated, $utf8NoBom)
+    Write-Step "added '$Entry' to $gitignorePath" 'action'
+    $Script:ARTIFACTS_CREATED += $gitignorePath
+}
+
 function Install-Hooks {
     param([hashtable]$Ctx)
-    Write-Step "installHooks: to be implemented in commit 4 (Plan steps 7-8)" 'warn'
-    if ($Ctx.DryRun) {
-        Write-Step "  - would copy tooling/hooks/ to $($Ctx.TargetRepo)/tooling/hooks/" 'dryrun'
-        Write-Step "  - would add .sle/.active-role to .gitignore" 'dryrun'
-        Write-Step "  - would generate SLE-SETUP.md in target" 'dryrun'
-    }
+
+    $sourceHooks = Join-Path $Script:SOURCE_ROOT 'tooling\hooks'
+    $targetHooks = Join-Path $Ctx.TargetRepo 'tooling\hooks'
+
+    Write-Step "installing hooks to: $targetHooks" 'info'
+    Copy-DirectoryTree -SourceDir $sourceHooks -DestDir $targetHooks -Ctx $Ctx | Out-Null
+
+    Add-GitignoreEntry -Ctx $Ctx -Entry '.sle/.active-role'
 }
 
 function New-SetupGuide {
     param([hashtable]$Ctx)
-    Write-Step "generateSetupGuide: to be implemented in commit 4 (Plan step 7)" 'warn'
+
+    $templatePath = Join-Path $Script:SOURCE_ROOT 'scripts\templates\sle-setup.md.template'
+    $destPath = Join-Path $Ctx.TargetRepo 'SLE-SETUP.md'
+
+    if (-not (Test-Path $templatePath)) {
+        Write-Step "setup template missing: $templatePath" 'error'
+        return
+    }
+
+    if ((Test-Path $destPath) -and -not $Ctx.Force) {
+        Write-Step "SLE-SETUP.md already exists (preserved): $destPath" 'skipped'
+        return
+    }
+
+    if ($Ctx.DryRun) {
+        Write-Step "would generate $destPath" 'dryrun'
+        return
+    }
+
+    $template = Get-Content -Path $templatePath -Encoding UTF8 -Raw
+
+    $installDate = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss zzz')
+    $components = ($Ctx.Components -join ', ')
+    $hooksInstalled = if ('hooks' -in $Ctx.Components) { 'yes' } else { 'no' }
+    $ciInstalled = if ('ci' -in $Ctx.Components) { 'yes' } else { 'no' }
+
+    $artifactsList = ($Script:ARTIFACTS_CREATED | ForEach-Object { "- $_" }) -join "`n"
+    if ([string]::IsNullOrWhiteSpace($artifactsList)) {
+        $artifactsList = "- (none)"
+    }
+    $uninstallList = $artifactsList
+
+    $rendered = $template `
+        -replace '\{\{INSTALL_DATE\}\}', $installDate `
+        -replace '\{\{TARGET_REPO\}\}', $Ctx.TargetRepo `
+        -replace '\{\{COMPONENTS\}\}', $components `
+        -replace '\{\{ARTIFACTS_LIST\}\}', $artifactsList `
+        -replace '\{\{HOOKS_INSTALLED\}\}', $hooksInstalled `
+        -replace '\{\{CI_INSTALLED\}\}', $ciInstalled `
+        -replace '\{\{UNINSTALL_LIST\}\}', $uninstallList
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText($destPath, $rendered, $utf8NoBom)
+    Write-Step "generated $destPath" 'action'
+    $Script:ARTIFACTS_CREATED += $destPath
 }
 
 function Write-Summary {
@@ -524,9 +605,32 @@ function Write-Summary {
         Write-Host "Mode: dry-run (nothing was modified)"
     } else {
         Write-Host "Mode: real execution"
+        Write-Host "Artifacts created: $($Script:ARTIFACTS_CREATED.Count)"
     }
     Write-Host ""
-    Write-Host "Next steps will be listed here after full implementation."
+    Write-Host "Next steps:"
+    $step = 1
+
+    if (('ci' -in $Ctx.Components) -or ('hooks' -in $Ctx.Components)) {
+        Write-Host "  $step. Review $($Ctx.TargetRepo)\.sle\manifesto.md - replace <preencher: ...> placeholders."
+        $step++
+    }
+    if ('hooks' -in $Ctx.Components) {
+        Write-Host "  $step. Read $($Ctx.TargetRepo)\SLE-SETUP.md for harness integration instructions."
+        $step++
+        Write-Host "  $step. Set the active role at session start: echo designer > .sle/.active-role"
+        $step++
+    }
+    if ('ci' -in $Ctx.Components) {
+        Write-Host "  $step. Run 'pytest tooling/' in the target repo to confirm CI scripts pass."
+        $step++
+        Write-Host "  $step. After 1-2 sprints in warning mode, remove 'continue-on-error: true' from workflows."
+        $step++
+    }
+    if ('skills' -in $Ctx.Components -and $Ctx.Components.Count -eq 1) {
+        Write-Host "  $step. Skills installed. Read README.md and metodologia-sle.md at the source repo."
+        $step++
+    }
     Write-Host "-----------------"
 }
 

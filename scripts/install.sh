@@ -510,17 +510,104 @@ install_ci() {
     create_manifesto_skeleton
 }
 
-install_hooks() {
-    write_step warn "install_hooks: to be implemented in commit 4 (Plan steps 7-8)"
-    if [[ "$ARG_DRY_RUN" == 'true' ]]; then
-        write_step dryrun "  - would copy tooling/hooks/ to $ARG_TARGET_REPO/tooling/hooks/"
-        write_step dryrun "  - would add .sle/.active-role to .gitignore"
-        write_step dryrun "  - would generate SLE-SETUP.md in target"
+add_gitignore_entry() {
+    local entry="$1"
+    local gitignore_path="$ARG_TARGET_REPO/.gitignore"
+
+    if [[ -e "$gitignore_path" ]]; then
+        while IFS= read -r line; do
+            if [[ "${line// }" == "$entry" ]]; then
+                write_step skipped ".gitignore already contains '$entry' (skipped)"
+                return 0
+            fi
+        done < "$gitignore_path"
     fi
+
+    if [[ "$ARG_DRY_RUN" == 'true' ]]; then
+        write_step dryrun "would add '$entry' to $gitignore_path"
+        return 0
+    fi
+
+    if [[ -e "$gitignore_path" ]]; then
+        local last_char
+        last_char=$(tail -c 1 "$gitignore_path" 2>/dev/null || printf '')
+        if [[ "$last_char" != $'\n' ]]; then
+            printf '\n' >> "$gitignore_path"
+        fi
+        printf '\n# SLE marker-file: role da sessao ativa (local, nao versionado)\n%s\n' "$entry" >> "$gitignore_path"
+    else
+        mkdir -p "$(dirname "$gitignore_path")"
+        printf '# SLE marker-file: role da sessao ativa (local, nao versionado)\n%s\n' "$entry" > "$gitignore_path"
+    fi
+
+    write_step action "added '$entry' to $gitignore_path"
+    ARTIFACTS_CREATED+=("$gitignore_path")
+}
+
+install_hooks() {
+    local source_hooks="$SOURCE_ROOT/tooling/hooks"
+    local target_hooks="$ARG_TARGET_REPO/tooling/hooks"
+
+    write_step info "installing hooks to: $target_hooks"
+    copy_directory_tree "$source_hooks" "$target_hooks"
+
+    add_gitignore_entry '.sle/.active-role'
 }
 
 generate_setup_guide() {
-    write_step warn "generate_setup_guide: to be implemented in commit 4 (Plan step 7)"
+    local template_path="$SOURCE_ROOT/scripts/templates/sle-setup.md.template"
+    local dest_path="$ARG_TARGET_REPO/SLE-SETUP.md"
+
+    if [[ ! -e "$template_path" ]]; then
+        write_step error "setup template missing: $template_path"
+        return 1
+    fi
+
+    if [[ -e "$dest_path" && "$ARG_FORCE" != 'true' ]]; then
+        write_step skipped "SLE-SETUP.md already exists (preserved): $dest_path"
+        return 0
+    fi
+
+    if [[ "$ARG_DRY_RUN" == 'true' ]]; then
+        write_step dryrun "would generate $dest_path"
+        return 0
+    fi
+
+    local install_date components hooks_installed ci_installed artifacts_list
+    install_date=$(date '+%Y-%m-%d %H:%M:%S %z')
+    components="${ARG_COMPONENTS[*]}"
+    if _contains hooks "${ARG_COMPONENTS[@]}"; then
+        hooks_installed='yes'
+    else
+        hooks_installed='no'
+    fi
+    if _contains ci "${ARG_COMPONENTS[@]}"; then
+        ci_installed='yes'
+    else
+        ci_installed='no'
+    fi
+
+    if [[ "${#ARTIFACTS_CREATED[@]}" -eq 0 ]]; then
+        artifacts_list='- (none)'
+    else
+        artifacts_list=$(printf -- '- %s\n' "${ARTIFACTS_CREATED[@]}")
+        artifacts_list="${artifacts_list%$'\n'}"
+    fi
+
+    local template
+    template=$(cat "$template_path")
+
+    template="${template//\{\{INSTALL_DATE\}\}/$install_date}"
+    template="${template//\{\{TARGET_REPO\}\}/$ARG_TARGET_REPO}"
+    template="${template//\{\{COMPONENTS\}\}/$components}"
+    template="${template//\{\{HOOKS_INSTALLED\}\}/$hooks_installed}"
+    template="${template//\{\{CI_INSTALLED\}\}/$ci_installed}"
+    template="${template//\{\{ARTIFACTS_LIST\}\}/$artifacts_list}"
+    template="${template//\{\{UNINSTALL_LIST\}\}/$artifacts_list}"
+
+    printf '%s\n' "$template" > "$dest_path"
+    write_step action "generated $dest_path"
+    ARTIFACTS_CREATED+=("$dest_path")
 }
 
 write_summary() {
@@ -533,15 +620,36 @@ write_summary() {
     if _contains ci "${ARG_COMPONENTS[@]}" || _contains hooks "${ARG_COMPONENTS[@]}"; then
         echo "Target repo: $ARG_TARGET_REPO"
     fi
-    local mode
     if [[ "$ARG_DRY_RUN" == 'true' ]]; then
-        mode='dry-run (nothing was modified)'
+        echo "Mode: dry-run (nothing was modified)"
     else
-        mode='real execution'
+        echo "Mode: real execution"
+        echo "Artifacts created: ${#ARTIFACTS_CREATED[@]}"
     fi
-    echo "Mode: $mode"
     echo ""
-    echo "Next steps will be listed here after full implementation."
+    echo "Next steps:"
+    local step=1
+
+    if _contains ci "${ARG_COMPONENTS[@]}" || _contains hooks "${ARG_COMPONENTS[@]}"; then
+        echo "  $step. Review $ARG_TARGET_REPO/.sle/manifesto.md - replace <preencher: ...> placeholders."
+        step=$((step + 1))
+    fi
+    if _contains hooks "${ARG_COMPONENTS[@]}"; then
+        echo "  $step. Read $ARG_TARGET_REPO/SLE-SETUP.md for harness integration instructions."
+        step=$((step + 1))
+        echo "  $step. Set the active role at session start: echo designer > .sle/.active-role"
+        step=$((step + 1))
+    fi
+    if _contains ci "${ARG_COMPONENTS[@]}"; then
+        echo "  $step. Run 'pytest tooling/' in the target repo to confirm CI scripts pass."
+        step=$((step + 1))
+        echo "  $step. After 1-2 sprints in warning mode, remove 'continue-on-error: true' from workflows."
+        step=$((step + 1))
+    fi
+    if _contains skills "${ARG_COMPONENTS[@]}" && [[ "${#ARG_COMPONENTS[@]}" -eq 1 ]]; then
+        echo "  $step. Skills installed. Read README.md and metodologia-sle.md at the source repo."
+        step=$((step + 1))
+    fi
     echo "-----------------"
 }
 
