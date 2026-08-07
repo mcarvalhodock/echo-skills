@@ -77,6 +77,9 @@ Estes ajustes ficam também documentados como "histórico de revisões" na tese 
 | 2026-08-07 | v2 (fidelidade) | protótipo N3 descartado gerava frustração contratual | designer, validator, executor, tese, spec, plano | tese, seção "Histórico de revisões" |
 | 2026-08-07 | v3 (TDD contextualizado) | codebases legadas não suportam TDD ortodoxo | validator, tese, spec, plano | tese, seção "Histórico de revisões" |
 | 2026-08-07 | v4 (Clean Code universal + refactor não-semântico) | testes ruins do Validator geravam custo de manutenção; Executor deve poder refatorar | executor, validator, tese, spec, plano | tese, seção "Histórico de revisões" |
+| 2026-08-07 | Instaladores automatizados + mitigação parcial da lacuna "role sem produtor" | hooks pedem `--role` mas nenhum componente do sistema o produz automaticamente; instalador agora configura marker-file (`.sle/.active-role`) + `.gitignore` + `SLE-SETUP.md` com instruções por harness, tornando a Estratégia B (marker-file) o caminho padrão do repositório consumidor | scripts/, docs/specs/instaladores-sle*.md, docs/plans/instaladores-sle.md, scripts/tests/ | docs/specs/instaladores-sle.md, seção "Observações para a Fase O" |
+
+**Nota sobre a lacuna "role sem produtor":** a mitigação acima é **parcial**. Fechamento completo exigiria um wrapper de invocação (Estratégia C) que expõe `SLE_ACTIVE_ROLE` como variável de ambiente ao processo do harness antes da skill ser carregada. Isso está fora do escopo v1 do instalador porque cada harness (Claude Code, Cursor, futuros) tem contrato próprio de wrapper — precisa de investigação por harness antes de virar automação. Registrar como pressão recorrente se aparecer em uso real com hooks sendo burlados por marker-file esquecido.
 
 ## Formato geral
 
