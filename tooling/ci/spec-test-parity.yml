@@ -1,0 +1,20 @@
+name: SLE — Spec/Test parity
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify spec/test parity
+        run: python tooling/ci/scripts/spec_test_parity.py --specs-dir docs/specs
