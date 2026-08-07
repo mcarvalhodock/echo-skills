@@ -41,19 +41,27 @@ Ausência do campo degrada, não bloqueia — o Executor assume boas práticas g
 
 ## Hooks ativos
 
-Nenhum ainda. Fase 7 do plano de refatoração adiciona hooks em `tooling/hooks/` e este campo passará a listá-los:
+Os três hooks de enforcement das invariantes 1 e 2 do SLE, entregues na Fase 7 da refatoração:
 
-- `block-designer-writing-code/` (previsto)
-- `block-executor-writing-tests-semantically/` (previsto — permite refactor não-semântico via detecção suíte antes/depois)
-- `block-validator-writing-code/` (previsto)
+- [`tooling/hooks/block-designer-writing-code/`](../tooling/hooks/block-designer-writing-code/) — bloqueia Designer escrevendo código de produção
+- [`tooling/hooks/block-validator-writing-code/`](../tooling/hooks/block-validator-writing-code/) — bloqueia Validator escrevendo código de produção
+- [`tooling/hooks/block-executor-writing-tests-semantically/`](../tooling/hooks/block-executor-writing-tests-semantically/) — Executor pode refactor não-semântico em testes (DRY, fixtures), mas não pode alterar semântica (v4)
+
+Cobertura: 35 testes em `tooling/hooks/tests/`, cobrindo bloqueio efetivo e não-interferência em operações permitidas. Ativação em Claude Code / Cursor / git pre-commit documentada em cada README de hook.
+
+Neste repositório (que é markdown puro + tooling em Python), os hooks não são invocados pelo harness — servem como referência e templates para repositórios consumidores.
 
 ## CI templates ativos
 
-Nenhum ainda. Fase 7 adiciona em `tooling/ci/`:
+Os três workflows GitHub Actions em `tooling/ci/` com scripts Python portáveis:
 
-- `spec-test-parity.yml` (previsto — spec ↔ test file 1-para-1)
-- `criterion-coverage.yml` (previsto — cobertura de crítério por tag)
-- `pr-spec-diff.yml` (previsto — PR modifica código sem diff em spec é bloqueado)
+- [`tooling/ci/spec-test-parity.yml`](../tooling/ci/spec-test-parity.yml) — cada spec declara seus testes; cada caminho declarado existe
+- [`tooling/ci/criterion-coverage.yml`](../tooling/ci/criterion-coverage.yml) — cada critério (`A1`, `C2`, ...) tem marcador em algum teste ou em `manual-validation.md`
+- [`tooling/ci/pr-spec-diff.yml`](../tooling/ci/pr-spec-diff.yml) — código de produção não muda no PR sem que uma spec correspondente também mude
+
+Cobertura: 16 testes em `tooling/ci/tests/`. Scripts são adaptáveis para GitLab CI, CircleCI, pre-push local (README de `tooling/ci/` detalha).
+
+Neste repositório os workflows estão presentes como referência canônica — não estão habilitados em `.github/workflows/`, porque a superfície do repo (markdown + tooling isolado) não tem "código de produção" no sentido tradicional. Repositórios consumidores copiam para `.github/workflows/` e ajustam `Paths de produção` do próprio manifesto.
 
 ## Nível de rigor esperado
 
@@ -80,3 +88,4 @@ Não se aplica — repositório de uso pessoal. Ver [`propostas/expansao-para-ti
 ## Histórico
 
 - **2026-08-07:** manifesto criado como parte da refatoração ECHO → SLE. Domínios `plataforma` e `integração` promovidos de inativos a ativos (o método ganhou componente executável). Campo `tdd-aplicavel` adicionado no ajuste v3.
+- **2026-08-07 (fim do dia):** Fase 7 concluída — três hooks (`tooling/hooks/`) e três workflows CI (`tooling/ci/`) entregues com 51 testes verdes. Campos "Hooks ativos" e "CI templates ativos" refletem estado real (não mais "previsto"). Fase 8 (migração de identidade) em andamento.
