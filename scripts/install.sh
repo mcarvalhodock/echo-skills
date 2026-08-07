@@ -302,11 +302,62 @@ confirm_source_root() {
     write_step info "SLE source detected: $SOURCE_ROOT"
 }
 
-install_skills() {
-    write_step warn "install_skills: to be implemented in the next commit (Plan step 5)"
-    if [[ "$ARG_DRY_RUN" == 'true' ]]; then
-        write_step dryrun "  - would copy designer/, validator/, executor/, observer/ to [$ARG_SCOPE] destination"
+get_skills_destination() {
+    if [[ "$ARG_SCOPE" == 'global' ]]; then
+        printf '%s\n' "$HOME/.claude/skills"
+    else
+        printf '%s\n' "$ARG_TARGET_REPO/.claude/skills"
     fi
+}
+
+copy_skill_folder() {
+    local skill_name="$1"
+    local source_dir="$2"
+    local dest_root="$3"
+    local src_skill="$source_dir/$skill_name"
+    local dst_skill="$dest_root/$skill_name"
+
+    if [[ ! -d "$src_skill" ]]; then
+        write_step error "source skill missing: $src_skill"
+        return 1
+    fi
+
+    if [[ -e "$dst_skill" && "$ARG_FORCE" != 'true' ]]; then
+        write_step skipped "skill '$skill_name' already at $dst_skill (use --force to overwrite)"
+        return 0
+    fi
+
+    if [[ "$ARG_DRY_RUN" == 'true' ]]; then
+        write_step dryrun "would copy $src_skill -> $dst_skill"
+        return 0
+    fi
+
+    local staging="$dst_skill.sle-staging"
+    [[ -e "$staging" ]] && rm -rf "$staging"
+
+    mkdir -p "$dest_root"
+    cp -R "$src_skill" "$staging"
+
+    [[ -e "$dst_skill" ]] && rm -rf "$dst_skill"
+    mv "$staging" "$dst_skill"
+
+    write_step action "installed skill '$skill_name' -> $dst_skill"
+    ARTIFACTS_CREATED+=("$dst_skill")
+    return 0
+}
+
+install_skills() {
+    local destination
+    destination=$(get_skills_destination)
+    write_step info "installing skills to: $destination (scope=$ARG_SCOPE)"
+
+    local skills=(designer validator executor observer)
+    for skill in "${skills[@]}"; do
+        if ! copy_skill_folder "$skill" "$SOURCE_ROOT" "$destination"; then
+            write_step error "failed to install skill '$skill' - aborting skills phase"
+            exit 1
+        fi
+    done
 }
 
 install_ci() {

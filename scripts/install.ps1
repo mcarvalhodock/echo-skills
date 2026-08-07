@@ -260,11 +260,71 @@ function Confirm-SourceRoot {
     Write-Step "SLE source detected: $Script:SOURCE_ROOT" 'info'
 }
 
+function Get-SkillsDestination {
+    param([hashtable]$Ctx)
+    if ($Ctx.Scope -eq 'global') {
+        return (Join-Path $env:USERPROFILE '.claude\skills')
+    }
+    return (Join-Path $Ctx.TargetRepo '.claude\skills')
+}
+
+function Copy-SkillFolder {
+    param(
+        [string]$SkillName,
+        [string]$SourceDir,
+        [string]$DestRoot,
+        [hashtable]$Ctx
+    )
+    $srcSkill = Join-Path $SourceDir $SkillName
+    $dstSkill = Join-Path $DestRoot $SkillName
+
+    if (-not (Test-Path $srcSkill)) {
+        Write-Step "source skill missing: $srcSkill" 'error'
+        return $false
+    }
+
+    if ((Test-Path $dstSkill) -and -not $Ctx.Force) {
+        Write-Step "skill '$SkillName' already at $dstSkill (use -Force to overwrite)" 'skipped'
+        return $true
+    }
+
+    if ($Ctx.DryRun) {
+        Write-Step "would copy $srcSkill -> $dstSkill" 'dryrun'
+        return $true
+    }
+
+    $staging = "$dstSkill.sle-staging"
+    if (Test-Path $staging) {
+        Remove-Item -Path $staging -Recurse -Force
+    }
+
+    New-Item -ItemType Directory -Path $DestRoot -Force | Out-Null
+    Copy-Item -Path $srcSkill -Destination $staging -Recurse -Force
+
+    if (Test-Path $dstSkill) {
+        Remove-Item -Path $dstSkill -Recurse -Force
+    }
+    Move-Item -Path $staging -Destination $dstSkill
+
+    Write-Step "installed skill '$SkillName' -> $dstSkill" 'action'
+    $Script:ARTIFACTS_CREATED += $dstSkill
+    return $true
+}
+
 function Install-Skills {
     param([hashtable]$Ctx)
-    Write-Step "installSkills: to be implemented in the next commit (Plan step 5)" 'warn'
-    if ($Ctx.DryRun) {
-        Write-Step "  - would copy designer/, validator/, executor/, observer/ to [$($Ctx.Scope)] destination" 'dryrun'
+
+    $destination = Get-SkillsDestination -Ctx $Ctx
+    Write-Step "installing skills to: $destination (scope=$($Ctx.Scope))" 'info'
+
+    $skills = @('designer', 'validator', 'executor', 'observer')
+    foreach ($skill in $skills) {
+        $ok = Copy-SkillFolder -SkillName $skill -SourceDir $Script:SOURCE_ROOT `
+            -DestRoot $destination -Ctx $Ctx
+        if (-not $ok) {
+            Write-Step "failed to install skill '$skill' - aborting skills phase" 'error'
+            exit 1
+        }
     }
 }
 
