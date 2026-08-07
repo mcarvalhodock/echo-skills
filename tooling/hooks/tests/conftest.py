@@ -29,6 +29,7 @@ def _load_hook(hook_dir_name: str, module_alias: str) -> ModuleType:
 
 
 designer_hook = _load_hook("block-designer-writing-code", "sle_designer_hook")
+validator_hook = _load_hook("block-validator-writing-code", "sle_validator_hook")
 
 
 @pytest.fixture()
