@@ -1,4 +1,4 @@
-# Catálogo de domínios — ECHO
+# Catálogo de domínios — SLE
 
 > Fonte única de verdade. Skills e templates **referenciam** este arquivo; nenhum deles repete a lista. Se a lista aparecer duplicada em outro lugar do repo, isso é defeito, não conveniência.
 
@@ -15,7 +15,7 @@ Por isso não existe domínio `coding`. Ele seria o "outros" disfarçado — e o
 O catálogo funciona em duas camadas, com ciclos de vida diferentes:
 
 1. **Vocabulário canônico** — este arquivo. Compartilhado, cresce devagar, por evidência registrada. Garante que `segurança` significa a mesma coisa em qualquer projeto.
-2. **Ativação local** — `.echo/manifesto.md` em cada repositório. Declara quais domínios existem *ali*, quais são obrigatórios e qual ferramental está disponível. Muda com o projeto, sem pedir licença ao vocabulário.
+2. **Ativação local** — `.sle/manifesto.md` em cada repositório (com `.echo/manifesto.md` como alias legado, lido como fallback se `.sle/` estiver ausente). Declara quais domínios existem *ali*, quais são obrigatórios e qual ferramental está disponível. Muda com o projeto, sem pedir licença ao vocabulário.
 
 Sem essa separação, `experiência` aparece como opção em repo sem frontend, e "quais especialistas acionar" volta a ser inferência — que é exatamente o que o método tenta tirar do caminho.
 
@@ -71,10 +71,10 @@ Uma spec inteiramente classificada como `miolo` é um resultado legítimo, não 
 
 ## Manifesto por repositório
 
-Cada repositório declara sua ativação local em `.echo/manifesto.md`. Formato:
+Cada repositório declara sua ativação local em `.sle/manifesto.md` (com `.echo/manifesto.md` como alias legado). Formato:
 
 ```markdown
-# Manifesto ECHO — [nome do repositório]
+# Manifesto SLE — [nome do repositório]
 
 ## Domínios ativos
 | domínio | obrigatório | ferramental | observações |
@@ -88,6 +88,12 @@ Cada repositório declara sua ativação local em `.echo/manifesto.md`. Formato:
 - `integração` — serviço não expõe nem consome API externa
 - `privacidade` — não trata dado pessoal
 
+## Padrão de código local
+[STYLE.md / .editorconfig / linter config, ou "boas práticas gerais" quando não declarado]
+
+## tdd-aplicavel
+[`ortodoxo` (default) | `parcial` | `manual`]
+
 ## Donos
 [Quem responde por cada domínio ativo, quando houver nome definido. Opcional.]
 ```
@@ -99,11 +105,11 @@ Regras do manifesto:
 - **Ausência de ferramental não desativa o domínio — declara uma dívida.** Um repo sem stack de observabilidade não deixa de precisar ser observável. Nesse caso, fatias do domínio produzem **recomendação** em vez de implementação, o que é honesto e ainda útil.
 - **Ferramental declarado tem retorno prático imediato:** um especialista que sabe o stack gera instrumentação real; sem saber, gera pseudocódigo genérico que ninguém aproveita.
 
-O que vive em `.echo/` dentro do repositório é só o que **pertence** ao projeto: o manifesto e o log de pressão, ambos versionados por quem mantém o repo. Sub-specs geradas pelo fatiamento **não vivem ali** — são artefato de execução e nascem fora de qualquer workspace, para que a sanitização não dependa de um `.gitignore` estar correto em cada cliente. Detalhes na skill `planejar`.
+O que vive em `.sle/` (ou `.echo/` como alias legado) dentro do repositório é só o que **pertence** ao projeto: o manifesto, o log de pressão sobre o catálogo, e o log de pressão sobre o método — todos versionados por quem mantém o repo. Sub-specs geradas pelo fatiamento **não vivem ali** — são artefato de execução e nascem fora de qualquer workspace, para que a sanitização não dependa de um `.gitignore` estar correto em cada cliente. Detalhes na skill `designer` (na seção do Protocolo de fatiamento).
 
 ## Como este catálogo evolui
 
-Quando alguém tenta usar um domínio que não existe aqui, a skill **recusa e oferece a lista canônica** — é essa recusa que preserva a precisão no momento da spec. Mas a recusa **grava**: uma linha em `.echo/pressao-catalogo.md` com data, spec, nome tentado e o que se queria expressar.
+Quando alguém tenta usar um domínio que não existe aqui, a skill **recusa e oferece a lista canônica** — é essa recusa que preserva a precisão no momento da spec. Mas a recusa **grava**: uma linha em `.sle/pressao-catalogo.md` (ou `.echo/pressao-catalogo.md` como alias legado) com data, spec, nome tentado e o que se queria expressar.
 
 Esse log é o instrumento. O critério de promoção de um domínio novo sai da leitura do padrão acumulado — não de um número fixado antes de existir evidência. Uma anotação informal que morre no fim da conversa não serviria: o dado mais valioso do método é a pressão que ele sofre.
 
@@ -113,12 +119,12 @@ Estas são apostas conscientes, registradas para serem confirmadas ou derrubadas
 
 **`plataforma` é o domínio mais largo do catálogo.** Comporta deploy, custo, latência, escala e observabilidade. Domínio largo tende a virar o novo "outros". A fusão se sustenta enquanto o especialista for o mesmo, que é o critério deste catálogo — em quase toda empresa de TI, SRE/Plataforma atende os três eixos. **Sinal de falha:** fatias de performance aparecendo sem nenhum componente de infra (otimização algorítmica pura, complexidade de código). Se isso repetir, `performance` volta como domínio próprio.
 
-**Observabilidade está dentro de `plataforma`.** Aposta consciente. Se a Fase O ganhar tração real, ela se emancipa — e seria uma emancipação saudável, porque daria dono à fase mais frágil do método.
+**Observabilidade está dentro de `plataforma`.** Aposta consciente. Se a Fase Observar ganhar tração real, ela se emancipa — e seria uma emancipação saudável, porque daria dono à fase mais frágil do método (agora conduzida pela skill `observer` no SLE).
 
-**Não existe domínio `qualidade`.** Verificação é a Fase H, e TDD com testes integrados é default do método, não fatia delegável. Cada domínio verifica a própria fatia. O que se delegaria a um especialista de QA seria a *estratégia* de verificação — se essa necessidade aparecer de forma repetida no log de pressão, a decisão é revista.
+**Não existe domínio `qualidade`.** Verificação é a Fase Homologar (conduzida pelo `validator` no SLE), e TDD com testes integrados é default do método, não fatia delegável. Cada domínio verifica a própria fatia. O que se delegaria a um especialista de QA seria a *estratégia* de verificação — se essa necessidade aparecer de forma repetida no log de pressão, a decisão é revista.
 
 **Bounded context de negócio está fora deste catálogo.** `pagamentos`, `cobrança`, `antifraude` são um segundo eixo, ortogonal a este: disciplina roteia *especialista*, bounded context roteia *dono*. Ele depende da estrutura de cada empresa e não se inventa no papel — por isso não está aqui.
 
 ---
 
-*Alimenta a Fase E e a Fase C do [método ECHO](./metodologia-echo.md). Marcação é feita pela skill `especificar`; a decisão de fatiar é da skill `planejar`.*
+*Alimenta as Fases Definir e Desenhar do [método SLE](./metodologia-sle.md). Marcação e decisão de fatiar são ambas responsabilidade da skill `designer`.*
