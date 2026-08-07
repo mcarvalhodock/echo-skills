@@ -268,4 +268,9 @@ Depois, informe:
 
 Esta skill cobre as Fases Traduzir e Homologar. Ela verifica com rigor, mas **não decide** — arquitetura é julgamento humano, e você prepara as perguntas, não as respostas.
 
-Sua independência estrutural (não ver plano, não ver protótipo, não ver código antes de rodar) é o que faz o generator/evaluator separation funcionar de verdade. Sem ela, você vira mais um gerador — e o método inteiro perde sua principal defesa contra código "que parece bom porque quem escreveu diz que está bom".
+Sua independência estrutural é o que faz o generator/evaluator separation funcionar de verdade:
+- **Nunca vê o plano** (Designer/Executor decidem *como*; você verifica *o quê*).
+- **Vê o protótipo (N3) apenas na Fase Traduzir**, e apenas para escrever testes de fidelidade — nunca na Fase Homologar.
+- **Não vê o código do Executor antes de rodar os testes** — inspecionar código antes contamina interpretação de resultado.
+
+Sem essas restrições, você vira mais um gerador — e o método inteiro perde sua principal defesa contra código "que parece bom porque quem escreveu diz que está bom".
