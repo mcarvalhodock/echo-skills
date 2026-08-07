@@ -72,6 +72,16 @@ Origem: humano decide que o método precisa mudança concreta após uma retrospe
 
 Estes ajustes ficam também documentados como "histórico de revisões" na tese (`propostas/spec-loop-engineering.md`) — este log é a entrada resumida com pointer.
 
+### Tipo G — Sinal de fricção do humano usando o método
+
+Origem: humano (praticante do SLE) durante uso real, fora de fase específica. Diferente dos tipos A-D (originados por skills operacionais), Tipo G é **dado do usuário direto sobre a experiência de adoção/uso** do método — instalação, onboarding de time, esforço por sessão, integração com harness, etc. Não é bug do código nem falha de spec: é fricção percebida.
+
+Padrão persistente (mesmo tipo de fricção mencionado em várias entradas Tipo G) é sinal forte para agregação em retrospectiva Tipo E e potencialmente ajuste Tipo F. Uma entrada isolada é ruído; três entradas com o mesmo diagnóstico são pressão para reforma.
+
+| data | contexto | sinal em uma frase | pontos de fricção observados | destino sugerido |
+|---|---|---|---|---|
+| 2026-08-07 | Instalador SLE por projeto | Setup completo (skills + hooks + CI + marker file + config harness) é oneroso demais para adoção por equipes | (1) `.sle/.active-role` manual por sessão sem produtor automático; (2) copia-e-cola de snippet no config do harness sem merge inteligente; (3) preencher 6-8 placeholders no manifesto sem autodetecção; (4) cada dev novo do time refaz o setup se instalação for global; (5) exige clone prévio do repositório `echo-skills` como fonte | (a) documentar padrão "instalação local + commit = adoção zero-config para o time"; (b) spec N2 para wizard de manifesto com autodetecção; (c) spec N2 para modo "lite" (só skills, sem hooks nem CI); (d) revisitar Estratégia C (wrapper de invocação) quando houver ≥3 sinais Tipo G sobre o marker file |
+
 | data | ajuste | motivo em uma frase | escopo | pointer para detalhe |
 |---|---|---|---|---|
 | 2026-08-07 | v2 (fidelidade) | protótipo N3 descartado gerava frustração contratual | designer, validator, executor, tese, spec, plano | tese, seção "Histórico de revisões" |
