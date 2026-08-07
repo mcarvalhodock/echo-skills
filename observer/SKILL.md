@@ -172,10 +172,14 @@ Ao final do modo evento-driven, informe ao usuário:
 Não há sinal específico. Sua tarefa é ler os logs acumulados no período e detectar padrão.
 
 Leia:
-- `.sle/pressao-metodo.md` — log global de aprendizados sistêmicos.
+- `.sle/pressao-metodo.md` — log global de aprendizados sistêmicos. **Contém múltiplos tipos de entrada:**
+  - Retornos do Validador por spec vaga/não-falsificável (Fase Traduzir bloqueada).
+  - **Itens que caíram em validação manual (v3)** — Validator registra cada item da spec que não virou teste automatizado, com motivo. Um item ocasional é ruído; padrão persistente é sinal.
+  - **Retornos do Executor por bug semântico em teste ou passo manual (v4)** — Executor registra suite/plano devolvida ao Validador com justificativa concreta. Um caso é ruído; padrão persistente é sinal.
+  - Decisões humanas de pular Gate 3 arquitetural (Validador registra em `.sle/pressao-metodo.md` quando o humano opta por pular).
+  - Anotações do próprio Observer em retrospectivas anteriores.
 - `.sle/pressao-catalogo.md` — recusas de domínio.
 - Logs de aprendizado por spec (`docs/specs/*-log.md`).
-- Retornos do Validador (spec devolvida por falta de falsificabilidade).
 - Padrão de bugs se disponível (issues, tickets, incidents).
 
 Detecte padrão ao longo do período:
@@ -187,15 +191,22 @@ Detecte padrão ao longo do período:
 - [Padrão observado — ex: "3 specs devolvidas pelo Validador por falta de falsificabilidade em critérios de segurança"]
 - [Padrão observado — ex: "Recusas de domínio se acumulam em torno do conceito 'X' — considere se merece promoção ao catálogo"]
 - [Padrão observado — ex: "Bugs em produção em 4 features distintas apontam para gap comum na spec: comportamento em concorrência"]
+- [Padrão observado — ex (v3): "60% dos itens desta spec caíram em manual — repositório em `parcial` pode estar próximo de fronteira `manual`; sinalizar reflexão sobre modernização"]
+- [Padrão observado — ex (v4): "Executor retornou 5 vezes ao Validador por bug em mock/fixture nesta iteração — sinal de que Clean Code em testes está sendo ignorado pelo Validador"]
 
 **Não-padrão observado:**
 - [Coisas que aconteceram uma vez só e por isso não são padrão ainda — nomeadas para vigilância futura]
 
 **Recomendação ao humano (não-ação sua):**
-- [Sugestões apresentadas para avaliação humana — pode virar mudança de template, mudança do catálogo, ajuste de método, etc. Você propõe; humano decide.]
+- [Sugestões apresentadas para avaliação humana — pode virar mudança de template, mudança do catálogo, ajuste de método, ajuste do manifesto (ex: mudar `tdd-aplicavel` de `parcial` para `manual` ou vice-versa), etc. Você propõe; humano decide.]
 ```
 
 **A4 alimenta a evolução do próprio método — mas nenhuma mudança de método é feita por você.** Toda mudança de método passa por humano avaliando a agregação e decidindo se vira ação.
+
+**Padrões específicos que valem sinalizar quando emergem (referência, não checklist obrigatório):**
+- **TDD contextualizado (v3):** repositório declara `ortodoxo` mas o Validator caiu em manual repetidamente → gap entre declaração e realidade. Ou repositório declara `manual` mas nunca gera Fase Observar sobre isso → válvula de escape virando estado natural.
+- **Fidelidade (v2):** testes de fidelidade Camada 3 quebrando repetidamente por refactor visual não-regressor → fragilidade da camada; sinalizar. Ou nenhum protótipo N3 preservado sendo escrito apesar de tarefas visuais → possível fissura reintroduzida.
+- **Refactor não-semântico (v4):** Executor aplicando refactor não-semântico em quase toda tarefa → Validador está escrevendo testes ruins consistentemente. Ou Executor retornando suite ao Validador repetidamente → mesmo sinal, ainda mais forte.
 
 ### Passo 5.1 — Registrar no log (c) — global
 
