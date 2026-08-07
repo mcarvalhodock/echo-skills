@@ -3,6 +3,8 @@
 > **Nível 3 — Complexo.** Muda identidade do repositório, adiciona componente executável, refatora skills já usadas em produção pessoal. Cabe todo o rigor de N3.
 >
 > **v2 — 2026-08-07 (ajuste durante Fase C).** Durante a implementação (Passos 2–5 do plano), foi identificada a *fissura da fidelidade*: protótipo descartado em N3 gera frustração contratual entre o que foi homologado e o que é implementado. Ajuste aplicado à tese ([v2 do documento base](../../propostas/spec-loop-engineering.md)) e refletido aqui: (a) critério A5 novo — regras de acesso ao protótipo preservado; (b) critério C1 ampliado — template inclui seção de artefatos de fidelidade; (c) caso de borda novo — enforcement de "não-cópia" de protótipo; (d) restrição adicional — protótipo preservado é código *não-produção* e não deve ser importado em `src/`.
+>
+> **v3 — 2026-08-07 (TDD contextualizado, durante revisão do `validator`).** Durante revisão humana do `validator/SKILL.md` foi apontada uma lacuna: codebases legadas nem sempre suportam TDD ortodoxo. Ajuste aplicado à tese ([v3 do documento base](../../propostas/spec-loop-engineering.md)) e refletido aqui: (a) critério A6 novo — validator suporta os três níveis de TDD (`ortodoxo`, `parcial`, `manual`) com plano de validação manual estruturada e regras anti-fraude; (b) critério C2 ampliado — manifesto ganha campo `tdd-aplicavel`; (c) caso de borda novo — codebase legada onde TDD é inviável; (d) restrição adicional — plano de validação manual precisa ser executável por terceiro e exige evidência anexa em cada passo.
 
 ---
 
@@ -23,6 +25,7 @@ Uso continuado das skills atuais confirmou disciplina positiva mas expôs três 
 - [ ] **A3.** As três skills antigas (`especificar/`, `planejar/`, `homologar/`) foram removidas em commit dedicado com mensagem que referencia o commit de introdução do SLE.
 - [ ] **A4.** A skill `designer` foi usada com sucesso pra conduzir esta própria spec — teste de ácido do método atual.
 - [ ] **A5.** As três skills afetadas pela fidelidade documentam explicitamente as regras do protótipo preservado (N3): `designer` documenta preservação em `docs/specs/[nome]-prototipo/` com marcação de não-código-de-produção; `validator` documenta acesso ao protótipo apenas durante Fase Traduzir para escrever testes de fidelidade (Camada 3, opcional); `executor` documenta acesso como referência não-copiável de fidelidade visual/UX/comportamental, com Clean Code obrigatório na escrita do zero.
+- [ ] **A6.** A skill `validator` documenta explicitamente os três níveis de TDD (`ortodoxo`, `parcial`, `manual`) declarados via campo `tdd-aplicavel` no manifesto. Em `parcial` e `manual`, o Validator escreve plano de validação manual estruturada em `tests/[nome-da-tarefa]/manual-validation.md` com passos que possuem ação concreta, entrada específica e evidência anexável. Fase Homologar exige evidência anexa (log/screenshot/output) para cada passo manual — sem evidência, o passo não conta como executado. Cada item que cai em manual é registrado em `.sle/pressao-metodo.md`.
 
 ### Grupo B — Invariantes enforçados
 
@@ -33,7 +36,7 @@ Uso continuado das skills atuais confirmou disciplina positiva mas expôs três 
 ### Grupo C — Contratos revisados
 
 - [ ] **C1.** `template-especificacao.md` foi atualizado com: seção "contrato arquitetural" separada da comportamental; gate explícito de falsificabilidade; nota sobre spec enriquecida em N3; **seção "Artefatos de fidelidade (N3)"** que registra caminho do protótipo preservado quando aplicável e lista aspectos visuais/UX/microinteração que exigem preservação.
-- [ ] **C2.** Manifesto do repo `echo-skills` foi atualizado com: referência ao padrão de código local; hooks ativos declarados; CI templates declarados; nível de rigor esperado; domínios ativos revisados (`plataforma` e `integração` passam a ativos).
+- [ ] **C2.** Manifesto do repo `echo-skills` foi atualizado com: referência ao padrão de código local; hooks ativos declarados; CI templates declarados; nível de rigor esperado; **campo `tdd-aplicavel` (`ortodoxo` / `parcial` / `manual`) — default `ortodoxo` quando ausente**; domínios ativos revisados (`plataforma` e `integração` passam a ativos).
 - [ ] **C3.** Log global `.sle/pressao-metodo.md` foi criado com cabeçalho apropriado, pronto pra receber entradas.
 - [ ] **C4.** `dominios.md` mantém corpo intacto, atualiza apenas referências a "método ECHO" para "método SLE".
 
@@ -61,6 +64,8 @@ Uso continuado das skills atuais confirmou disciplina positiva mas expôs três 
 - Autoreferência: a spec do SLE foi escrita em ECHO — isso vira dívida técnica ou fica como marca histórica legítima?
 - Protótipo N3 preservado em `docs/specs/[nome]-prototipo/`: como enforçar que o Executor não copie código (só use como referência)? Enforcement determinístico razoável é bloquear import/require do caminho `docs/specs/*/prototipo/**` a partir de `src/` — atrapalha caso legítimo? Auditoria manual como fallback?
 - Testes de fidelidade (Camada 3) escritos pelo Validador em N3 podem ficar frágeis (screenshot muda a cada refactor visual sem regressão real). Como sinalizar diferença entre "quebra legítima" e "regressão de fidelidade" sem virar ruído contínuo?
+- Codebase legada onde TDD é comprovadamente inviável (framework de teste ausente, acoplamento excessivo, custo de setup maior que valor de captura). Manifesto declara `parcial` ou `manual`; Validator produz plano de validação manual estruturada. Como evitar que "manual" vire válvula de escape que apaga todo enforcement do método? (Mitigação prevista: cada uso registrado em `.sle/pressao-metodo.md`; Fase O detecta padrão persistente e força reflexão sobre modernização.)
+- Repositório em `manual` conflita com Camada 3 do enforcement (CI verifica cobertura de crítério por tag em teste). Como Camada 3 lida com repositórios sem testes automatizados — degrada, bloqueia, ou tem check alternativo baseado em `manual-validation.md`?
 
 ## Domínios envolvidos
 
@@ -89,6 +94,7 @@ Manifesto atual do `echo-skills` declara zero domínios ativos: *"toda mudança 
 - Compatibilidade com Claude Code é mandatória; compatibilidade com Cursor é desejável — declarar explicitamente onde diverge, se divergir.
 - Nenhuma dependência de serviços externos pagos como pré-requisito pra usar SLE.
 - **Protótipo N3 preservado é código *não-produção*.** Não deve ser importado em `src/`, não conta em cobertura, não roda em CI de produção. Convive no repositório como referência viva de fidelidade, análogo a fixtures ou mocks — mas dedicado ao ciclo do SLE.
+- **Plano de validação manual estruturada (níveis `parcial` e `manual`)** precisa ser executável por terceiro: ação concreta ("execute `curl X`"), entrada específica ("payload `{...}`"), evidência anexável ("response body igual a Y, ou screenshot Z"). Passo mal escrito não conta como cobertura. Fase Homologar exige evidência anexa para cada passo — sem evidência, o passo não conta como executado.
 
 ## Ambiente / destino
 
@@ -174,6 +180,8 @@ Incertezas genuínas que só uso real vai responder:
 ---
 
 ## Histórico de revisões
+
+**v3 — 2026-08-07 (TDD contextualizado durante revisão do `validator`):** identificação, durante revisão humana do `validator/SKILL.md`, de que codebases legadas nem sempre suportam TDD ortodoxo. Skill `validator` reescrita com novo Passo 3.1 (plano de validação manual estruturada) e Passo 8 ampliado (execução manual com evidência anexa). Tese `propostas/spec-loop-engineering.md` promovida a v3. Critérios adicionados: A6, C2 ampliado. Casos de borda adicionados: codebase legada com TDD inviável, tensão entre nível `manual` e Camada 3 de enforcement. Restrição adicional: passo manual precisa ser executável por terceiro com evidência anexável. Manifesto ganha campo `tdd-aplicavel`.
 
 **v2 — 2026-08-07 (ajuste de fidelidade durante Fase C):** identificação, durante a implementação das skills (Passos 2–5 do plano), da lacuna do descarte de protótipo em N3. Skills já commitadas (`designer`, `validator`, `executor`, `observer`) revisadas em conjunto; tese `propostas/spec-loop-engineering.md` promovida a v2. Critérios adicionados: A5, C1 ampliado. Casos de borda adicionados: enforcement de não-cópia de protótipo, fragilidade de testes de fidelidade. Restrição adicional: protótipo preservado é código não-produção. A refatoração continua no mesmo escopo, com esses acréscimos absorvidos.
 

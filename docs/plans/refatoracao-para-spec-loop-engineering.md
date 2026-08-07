@@ -4,6 +4,8 @@
 > Aprovado em 2026-08-07.
 >
 > **v2 — 2026-08-07 (ajuste durante Fase C):** durante a execução dos passos 2–5, foi identificada a *fissura da fidelidade* (protótipo N3 descartado gera frustração contratual). Ajuste aplicado à tese v2, spec v2, e reflete-se aqui: passos 2, 3, 4 ganham revisão de conteúdo (protótipo preservado, testes de fidelidade Camada 3, referência não-copiável); passo 6 (template) ganha adição da seção "Artefatos de fidelidade (N3)". Nenhum passo novo é adicionado; refinamento de passos existentes. Ver [Histórico de revisões](#histórico-de-revisões).
+>
+> **v3 — 2026-08-07 (TDD contextualizado, durante revisão do `validator`):** durante revisão humana do `validator/SKILL.md` foi identificada a lacuna do TDD em codebases legadas. Ajuste aplicado à tese v3, spec v3, e reflete-se aqui: passo 3 ganha adição de Passo 3.1 (validação manual estruturada) e reescrita do Passo 8; passo 7 (manifesto) ganha campo `tdd-aplicavel`. Mapeamento com critérios ganha A6. Nenhum passo novo; refinamento de escopo.
 
 ---
 
@@ -33,11 +35,12 @@
    - Frontmatter YAML
    - Recepção de spec (+ enriquecida, + protótipo preservado quando N3)
    - Escrita de testes em **três** camadas: BDD (comportamento) + contrato (arquitetural) + **fidelidade (Camada 3, opcional, apenas em N3 quando aspectos visuais/UX/microinteração emergiram — tags `@fidelidade:visual`, `@fidelidade:ux`, `@fidelidade:microinteracao`)**
+   - **TDD contextualizado** (v3): três níveis declarados no manifesto via campo `tdd-aplicavel` (`ortodoxo` / `parcial` / `manual`). Em `parcial` e `manual`, Validator escreve **plano de validação manual estruturada** em `tests/[nome-da-tarefa]/manual-validation.md` com passos que possuem ação concreta, entrada específica, evidência anexável. Fase Homologar exige evidência anexa (log/screenshot/output) para cada passo manual.
    - **Acesso ao protótipo preservado apenas durante Fase Traduzir** para escrever testes de fidelidade — na Fase Homologar (nova sessão), esse contexto não é carregado
    - Poder de retorno estrutural de spec vaga
-   - Handoff de suite para `executor`
-   - Retorno posterior para rodar testes contra código do Executor
-   - Reporte de evidência
+   - Handoff de suite (+ plano manual quando aplicável) para `executor`
+   - Retorno posterior para rodar testes automatizados + executar plano manual contra código do Executor
+   - Reporte de evidência (com evidência anexa para cada passo manual)
    - Preparação de checklist para Gate 3 (revisão arquitetural humana)
 
 ### Fase 4 — Skill `executor` (conduz Implementar)
@@ -77,6 +80,7 @@
    - Hooks ativos declarados
    - CI templates declarados
    - Nível de rigor esperado
+   - **`tdd-aplicavel`** (novo, v3): `ortodoxo` (default) | `parcial` | `manual`. Declara viabilidade de TDD ortodoxo no repositório; `parcial` e `manual` habilitam plano de validação manual estruturada no Validator.
    
    Manter `.echo/manifesto.md` com nota de redirect textual explícita para `.sle/manifesto.md`.
 
@@ -165,11 +169,12 @@
 - **A3** → passo 19
 - **A4** → pré-atendido pela existência da spec, validado pela ausência de retrabalho durante Fases 2–9
 - **A5** (v2) → passos 2, 3, 4 (regras de acesso ao protótipo preservado nas três skills afetadas)
+- **A6** (v3) → passo 3 (TDD contextualizado no `validator` com plano de validação manual estruturada)
 - **B1** → passos 2–5 (declaração explícita de isolamento em cada SKILL.md)
 - **B2** → passos 10–11
 - **B3** → passos 12–13
 - **C1** → passo 6 (com adição da seção "Artefatos de fidelidade (N3)" em v2)
-- **C2** → passo 7
+- **C2** → passo 7 (com adição do campo `tdd-aplicavel` em v3)
 - **C3** → passo 8
 - **C4** → passo 9
 - **D1** → passo 5
@@ -180,7 +185,7 @@
 - **E3** → passos 9, 16, e auditoria no passo 18
 - **E4** → passo 17
 
-Todos os 19 critérios têm cobertura explícita. Nenhum critério órfão.
+Todos os 20 critérios têm cobertura explícita. Nenhum critério órfão.
 
 ## Ordem de execução e dependências
 
@@ -228,6 +233,8 @@ Manter `.echo/manifesto.md` como redirect e criar `.sle/manifesto.md` como princ
 ---
 
 ## Histórico de revisões
+
+**v3 — 2026-08-07 (TDD contextualizado, durante revisão do `validator`):** durante revisão humana do `validator/SKILL.md` foi apontada lacuna do TDD ortodoxo em codebases legadas. Ajuste aprovado explicitamente (não desvio silencioso). Passo 3 foi reescrito para incluir Passo 3.1 (plano de validação manual estruturada) e Passo 8 ampliado (execução manual com evidência anexa). Passo 7 (manifesto) ganhou campo `tdd-aplicavel`. Mapeamento com critérios ganhou A6.
 
 **v2 — 2026-08-07 (ajuste durante Fase C):** durante execução dos passos 2–5, foi identificada a *fissura da fidelidade* (protótipo N3 descartado apaga aspectos visuais/UX/microinteração verificados). Ajuste aprovado explicitamente pelo humano (não desvio silencioso — obedeceu ao Passo 4 da `planejar`). Passos 2, 3, 4 foram revisados retroativamente para acomodar protótipo preservado + testes de fidelidade (Camada 3) + acesso não-copiável. Passo 6 ganhou adição de "Artefatos de fidelidade (N3)" no template. Nenhum passo novo; refinamento de escopo dentro dos existentes. Mapeamento com critérios ganhou A5. Skills já commitadas (`designer`, `validator`, `executor`) foram reescritas em conjunto para refletir v2.
 

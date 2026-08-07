@@ -161,6 +161,22 @@ O que cada papel enxerga define se "independência" é estrutural ou só declara
 - **Validador vê o protótipo (N3) apenas na Fase Traduzir.** Acesso é específico à escrita de testes de fidelidade. Ao entrar em Fase Homologar (nova sessão), o Validador **não** carrega esse contexto — mantém isolamento de execução.
 - **Executor vê testes completos (TDD clássico) + protótipo N3 como referência não-copiável.** Ele sabe exatamente o que precisa passar. Overfitting e cópia de protótipo são riscos reconhecidos; a mitigação vem da qualidade da spec, da revisão arquitetural, e dos testes de fidelidade que verificam preservação sem exigir cópia.
 
+## TDD contextualizado — três níveis
+
+Análogo ao Clean Code contextualizado (rigor declarado no manifesto), o SLE reconhece que **TDD ortodoxo não é viável em todo repositório**. Codebases legadas com acoplamento excessivo, framework de teste ruim, ou lógica só observável em nível de sistema, tornam TDD clássico impraticável — e forçar TDD nesses cenários vira teatro: teste que "sempre passa" ou nenhum teste com bikeshed textual em cima.
+
+Três níveis declarados em `.sle/manifesto.md` no campo `tdd-aplicavel`:
+
+- **`ortodoxo` (default e opinião do método):** cada crítério/cláusula/aspecto de fidelidade vira teste automatizado. Suite falha antes do código, passa depois.
+- **`parcial`:** onde é viável, teste automatizado; onde não é, **plano de validação manual estruturada** em `tests/[nome-da-tarefa]/manual-validation.md`, com passos concretos, entradas esperadas, evidência a coletar. Cada item da spec tem *cobertura declarada*, nunca fica órfão.
+- **`manual`:** cobertura toda em plano de validação manual estruturada. É fronteira — se um repositório vive aqui, é sinal para Fase O avaliar se o SLE cabe ou se modernização é pré-requisito.
+
+**Anti-fraude:** passo manual precisa ser executável por outra pessoa (ação concreta, entrada específica, evidência anexável). Passo mal escrito não conta como cobertura. Fase Homologar exige evidência anexa (log, screenshot, output) para cada passo manual — sem evidência, o passo não foi executado.
+
+**Sinal contínuo:** cada item que cai em manual é registrado em `.sle/pressao-metodo.md` com motivo. Padrão persistente ("essa codebase vive em manual") força reflexão sistêmica; caso ocasional é aceito.
+
+**A escolha do nível é do repositório, não do Validator.** O Validator segue o que o manifesto declara. Se o manifesto está em `ortodoxo` mas um item da spec é comprovadamente intestável, o Validator devolve o item (mesma lógica do gate de tradutibilidade) — não decai unilateralmente para manual.
+
 ## Testes de fidelidade (Camada 3, N3 opcional)
 
 Além de testes BDD (comportamento) e testes de contrato (cláusulas arquiteturais), o Validator escreve **testes de fidelidade** em N3 com protótipo preservado, quando aspectos visuais/UX/microinteração emergiram da consolidação.
@@ -276,6 +292,7 @@ O `.echo/manifesto.md` atual declara domínios ativos e ferramental. No SLE, ele
 - **Hooks ativos** (novo) — quais hooks da Camada 2 estão configurados
 - **CI templates ativos** (novo) — quais checks da Camada 3 rodam
 - **Nível de rigor esperado** (novo) — protótipo, MVP, produção crítica; cada tem baseline diferente pra Clean Code e pra rigor de spec
+- **`tdd-aplicavel`** (novo, v3) — `ortodoxo` (default) | `parcial` | `manual`. Declara o nível de TDD viável neste repositório. `parcial` e `manual` habilitam plano de validação manual estruturada; cada declaração diferente de `ortodoxo` é sinal contínuo para Fase Observar.
 
 O manifesto continua sendo declaração, não pendência. Ausência degrada, não bloqueia — mesma lógica do manifesto atual.
 
@@ -332,6 +349,8 @@ Nenhuma dessas pendências é ambiguidade da tese. São decisões operacionais q
 ---
 
 ## Histórico de revisões
+
+**v3 — 2026-08-07 (TDD contextualizado):** durante a revisão do `validator/SKILL.md`, foi identificada a lacuna de codebases legadas onde TDD ortodoxo é inviável. O método assumia TDD ortodoxo em todos os casos, o que gerava incentivo a fingir cobertura (testes que sempre passam, ou nenhum teste com escopo suprimido). Ajuste: introduzido campo `tdd-aplicavel` no manifesto com três níveis (`ortodoxo | parcial | manual`); `parcial` e `manual` habilitam plano de validação manual estruturada com regras anti-fraude (ação concreta, entrada específica, evidência anexável); Fase Homologar exige evidência anexa para cada passo manual. Alterações refletidas em: nova seção *TDD contextualizado — três níveis*; skill `validator` (novo Passo 3.1, Passo 4 e Passo 8 ampliados); spec e plano da refatoração ganham crítério e passo correspondentes.
 
 **v2 — 2026-08-07 (ajuste de fidelidade):** durante a Fase C da própria refatoração, foi identificada a *fissura da fidelidade* — protótipo descartado em N3 perde aspectos visuais/UX/microinteração que a consolidação não conseguiu nomear explicitamente, gerando frustração contratual entre o que foi homologado no protótipo e o que o Executor produziu do zero. Ajuste aplicado: protótipo passa a ser **preservado como artefato de fidelidade** (não descartado); Executor ganha acesso ao protótipo como referência (não como base de cópia); Validator ganha acesso ao protótipo apenas na Fase Traduzir para escrever testes de fidelidade (Camada 3, opcional) quando aplicável. Alterações refletidas em: matriz de visibilidade (linhas novas para *Protótipo N3 preservado* e *Testes de fidelidade*); seção *Regras do protótipo (só Nível 3)*; nova seção *Testes de fidelidade*; skills `designer`, `validator`, `executor` atualizadas em conjunto; spec e plano da refatoração atualizados para refletir o desvio.
 

@@ -45,6 +45,29 @@ Isso não é opção sua ("faço o que der pra fazer") — é **bloqueio de flux
 
 Esse é o principal mecanismo estrutural anti-teatro do SLE: se o Designer aprender a escrever spec estrategicamente vaga, ela vai bater aqui e ser devolvida. O log de retornos alimenta a Fase Observar (via `observer`).
 
+## TDD contextualizado — três níveis
+
+O SLE prefere **TDD ortodoxo** (cada crítério/cláusula/fidelidade vira teste automatizado que falha antes do código e passa depois). Mas o método reconhece que codebases legadas nem sempre suportam TDD: acoplamento excessivo, framework de teste ruim ou ausente, custo de setup maior que valor de captura, código que só é observável em nível de sistema.
+
+Para não fingir que TDD funciona onde não funciona, o SLE suporta **três níveis** de rigor de teste, declarados no `.sle/manifesto.md` do repositório de trabalho no campo `tdd-aplicavel`:
+
+- **`ortodoxo` (default; e opinião do método):** TDD clássico. Cada item da spec vira teste automatizado. Passos 3, 4 e 8 aplicam-se como descrito. **Nenhuma cobertura manual.**
+- **`parcial`:** onde é viável, escreve teste automatizado (Camadas 1/2/3 conforme aplicável). Onde não é viável, escreve **plano de validação manual estruturada** com passos concretos, entradas esperadas, saídas esperadas, evidência a coletar. Cada item da spec tem *cobertura declarada* (teste ou passo manual), **nunca fica órfão**.
+- **`manual`:** legado profundo. Cobertura toda em plano de validação manual estruturada. É fronteira do método — se um repositório vive aqui, é sinal para Fase Observar avaliar se o SLE ainda cabe ou se o repositório precisa modernizar antes de continuar a receber tarefas SLE.
+
+**Ausência do campo** no manifesto → default `ortodoxo`. O método é opinativo; degradação exige declaração explícita.
+
+**Como escolher entre teste automatizado e passo manual:** a decisão é sua (Validator), com base em viabilidade real, **não em preferência**. Se a decisão parece dúbia, escolha teste automatizado — a fronteira é sempre mover **para cima** no rigor, nunca para baixo.
+
+**Cada item declarado como manual é registrado em `.sle/pressao-metodo.md`** com data, spec, item, motivo. Isso é sinal contínuo para Fase Observar. Padrão persistente ("essa codebase vive em manual") força reflexão sistêmica; um caso ocasional é ruído aceito.
+
+**Anti-fraude do manual:** o plano de validação manual não é bikeshed textual. Cada passo precisa:
+- **Descrever a ação concretamente** (não "verifique X" — mas "execute `curl POST /endpoint -d {...}`" ou "acesse tela Y, clique Z").
+- **Descrever a evidência esperada** (não "veja que funciona" — mas "response status 201, corpo contém campo `id` numérico" ou "screenshot com valor Y visível no elemento Z").
+- **Ser executável por outra pessoa** que não o Designer.
+
+Passo manual que não é executável por outra pessoa é passo mal escrito — devolve pro Designer refinar a spec, mesma lógica do gate de tradutibilidade.
+
 ---
 
 ## FASE TRADUZIR
@@ -57,6 +80,7 @@ Confirme que:
 - Existe `docs/specs/[nome-da-tarefa].md` legível.
 - Se N3 e houve protótipo, existe também a **spec enriquecida** (marcador histórico "v2 após consolidação"). Use a versão enriquecida como referência ativa.
 - **Se N3 e a spec enriquecida indica "Artefatos de fidelidade":** existe `docs/specs/[nome-da-tarefa]-prototipo/` acessível. Você usa esse caminho **apenas nesta Fase Traduzir**, e apenas para escrever testes de fidelidade (Camada 3, Passo 3 abaixo).
+- **Consulte `.sle/manifesto.md`** para saber o `tdd-aplicavel` (`ortodoxo` / `parcial` / `manual`). Se ausente, default é `ortodoxo`.
 - **Você NÃO tem acesso** a `docs/plans/[nome-da-tarefa].md` nem ao histórico de conversa do Designer. Se esse conteúdo estiver visível no seu contexto por engano, sinalize o vazamento ao usuário e peça pra iniciar nova sessão sem esses artefatos antes de prosseguir.
 
 ### Passo 2 — Gate de tradutibilidade
@@ -122,17 +146,53 @@ Tags específicas: `@fidelidade:visual`, `@fidelidade:ux`, `@fidelidade:microint
 
 **Local dos testes:** `tests/[nome-da-tarefa]/` (ou convenção equivalente declarada no `.sle/manifesto.md` do repositório).
 
+### Passo 3.1 — Plano de validação manual (apenas em `tdd-aplicavel: parcial` ou `manual`)
+
+**Só se aplica** se o manifesto declara `parcial` ou `manual`, ou se você identificou item específico da spec para o qual TDD é inviável (caso justificado sob `parcial`).
+
+Para cada item que **não vai virar teste automatizado**, escreva passo no plano de validação manual estruturada em `tests/[nome-da-tarefa]/manual-validation.md`:
+
+```markdown
+### Passo M[n] — [descrição curta]
+
+**Cobre:** [tag do crítério / cláusula / aspecto de fidelidade — ex: @criterio:A1]
+
+**Ação a executar:**
+[Concreta, executável por outra pessoa. Ex: "execute `curl -X POST http://localhost:3000/orders -H 'Content-Type: application/json' -d '{\"itemId\": 42}'`" ou "acesse a tela de configurações → clique em 'Adicionar integração' → selecione tipo 'Webhook'".]
+
+**Entrada esperada:**
+[Dados específicos, não descrições genéricas.]
+
+**Saída/evidência esperada:**
+[Response body concreto, screenshot, log específico, valor observável. Não "veja que funcionou". Ex: "response HTTP 201 com body JSON contendo `id` numérico e `status: pending`".]
+
+**Como coletar evidência:**
+[O que anexar ao Passo 8 na Fase Homologar. Ex: "copiar output do curl", "screenshot do modal com valor `X` visível", "linha do log com `Order created id=NNN`".]
+```
+
+**Registre em `.sle/pressao-metodo.md`** para cada item que caiu em manual, com formato:
+
+```markdown
+| data | spec | item | tag | motivo em uma frase |
+|---|---|---|---|---|
+| AAAA-MM-DD | [nome-da-tarefa] | [texto do crítério] | [@criterio:X] | [motivo] |
+```
+
+**Anti-fraude:** se seu passo manual não passa em "outra pessoa executa isso sem me perguntar nada?", ele está mal escrito. Refine antes de fechar a Fase Traduzir. Passo manual mal escrito é pior que TDD ausente — cria ilusão de cobertura.
+
 ### Passo 4 — Verificar cobertura
 
 Antes de entregar a suite ao Executor, verifique:
 
-- [ ] Cada crítério de aceite da spec tem pelo menos um teste com tag correspondente (`@criterio:*`).
-- [ ] Cada cláusula do contrato arquitetural tem pelo menos um teste com tag correspondente (`@contrato:*`).
-- [ ] Se aplicável (N3 com "Artefatos de fidelidade"): cada aspecto listado tem pelo menos um teste com tag `@fidelidade:*`.
-- [ ] Todos os testes falham quando executados agora (ausência de implementação).
+- [ ] Cada crítério de aceite da spec tem cobertura declarada (**teste automatizado com tag `@criterio:*` OU passo manual em `manual-validation.md`**).
+- [ ] Cada cláusula do contrato arquitetural tem cobertura declarada (teste `@contrato:*` OU passo manual).
+- [ ] Se aplicável (N3 com "Artefatos de fidelidade"): cada aspecto tem cobertura declarada (teste `@fidelidade:*` OU passo manual).
+- [ ] **Nenhum item da spec fica sem cobertura declarada** — item sem teste E sem passo manual é falha de tradução.
+- [ ] Todos os testes automatizados falham quando executados agora (ausência de implementação).
 - [ ] Nenhum teste "sempre passa" (você não introduziu assertion trivial).
+- [ ] Se há passos manuais: cada um é executável por terceiro, com ação, entrada e evidência concretas.
 
-Se algum crítério, cláusula ou aspecto de fidelidade ficou sem teste, isso é falha de tradução — volte ao Passo 3.
+Se algum item ficou sem cobertura declarada — nem teste nem passo manual — isso é falha de tradução; volte ao Passo 3 ou 3.1.
 
 ### Passo 5 — Handoff estrutural para o Executor
 
@@ -147,9 +207,9 @@ Ao final da Fase Traduzir, informe ao usuário literalmente:
 > O Executor deve ter acesso a:
 > - `docs/specs/[nome-da-tarefa].md` (spec + enriquecida)
 > - `docs/plans/[nome-da-tarefa].md` (plano do Designer)
-> - `tests/[nome-da-tarefa]/` (suite falhando que você acabou de escrever)
+> - `tests/[nome-da-tarefa]/` (suite falhando + `manual-validation.md` se aplicável)
 > - **Se N3 com protótipo preservado:** `docs/specs/[nome-da-tarefa]-prototipo/` — como **referência de fidelidade não-copiável**. O Executor não pode copiar código do protótipo; escreve do zero seguindo Clean Code. Os testes de fidelidade (Camada 3) verificam que o resultado preserva o observável.
-> - `.sle/manifesto.md` (padrão de Clean Code do repositório)
+> - `.sle/manifesto.md` (padrão de Clean Code do repositório + nível TDD aplicável)
 >
 > O Executor **não deve** ter acesso a este histórico de conversa. Sua função aqui, na Fase Traduzir, termina. Você será reinvocado depois, para Fase Homologar.
 >
@@ -182,37 +242,55 @@ Antes de executar qualquer comando que possa alterar ou apagar dados (testes que
 
 Verifique o nome do banco/schema, a variável de ambiente, ou o que for necessário para ter certeza antes de rodar. Isso não é garantia automática do método — é responsabilidade de execução sua, no momento em que o comando roda.
 
-### Passo 8 — Rodar a suite e reportar evidência
+### Passo 8 — Rodar suite automatizada + executar plano manual, reportar evidência
 
-Execute a suite de testes relevante (via shell) e reporte o resultado **real** — passou, falhou, ou não rodou por algum motivo. Nunca diga "deve ter funcionado" sem ter rodado.
+**Parte A — Suite automatizada.** Execute a suite de testes (via shell) e reporte o resultado **real** — passou, falhou, ou não rodou. Nunca diga "deve ter funcionado" sem ter rodado.
+
+**Parte B — Plano manual (se houver `manual-validation.md`).** Execute cada passo M[n] em sequência (ou peça ao humano executar quando exigir ambiente de UI ou acesso específico). Colete a evidência declarada no plano — não aceite "conferi visualmente" como evidência: sem output/screenshot/log anexado, o passo não conta como executado.
 
 Reporte em formato explícito:
 
 ```markdown
 ### Resultado da suite
 
+**Nível TDD aplicável neste repositório:** [ortodoxo / parcial / manual]
+
+#### Parte A — Automatizado
 **Total de testes:** [N]
 **Passaram:** [N-K]
 **Falharam:** [K]
 **Não rodaram:** [M] (motivo: ...)
 
-**Cobertura por crítério:**
-| crítério | tag | testes | resultado |
-|---|---|---|---|
-| [texto do crítério A1] | @criterio:A1 | [n testes] | ✅ passou / ❌ falhou |
+#### Parte B — Manual (se aplicável)
+**Total de passos manuais:** [P]
+**Executados com evidência:** [P-Q]
+**Falharam:** [Q]
+**Não executados:** [R] (motivo: ...)
 
-**Cobertura por cláusula arquitetural:**
-| cláusula | tag | testes | resultado |
-|---|---|---|---|
+#### Cobertura por crítério
+| crítério | tag | teste ou passo M | evidência anexa | resultado |
+|---|---|---|---|---|
+| [texto do crítério A1] | @criterio:A1 | teste `test_a1.py::test_creates_order` | log da suite | ✅ passou |
+| [texto do crítério A2] | @criterio:A2 | passo M3 | screenshot `evidence-a2.png` | ✅ passou |
+
+#### Cobertura por cláusula arquitetural
+| cláusula | tag | cobertura | evidência anexa | resultado |
+|---|---|---|---|---|
+| ...
+
+#### Cobertura de fidelidade (se aplicável)
+| aspecto | tag | cobertura | evidência anexa | resultado |
+|---|---|---|---|---|
 | ...
 ```
 
-Se algum teste falhou:
-1. **Não avance para Passo 9.**
-2. Reporte a falha ao usuário com output exato do teste.
-3. Encaminhe de volta ao Executor (nova sessão), com o output em mãos. O Executor não pode escrever novos testes — ele só pode corrigir código.
-
-Se todos os testes passaram, prossiga.
+**Regras:**
+1. **Todo item da spec** deve aparecer com evidência anexa e resultado real (não "assumido").
+2. **Falha em qualquer parte (A ou B) bloqueia o Passo 9.** Reporte a falha com output exato / evidência coletada e encaminhe:
+   - Se falha em teste automatizado → nova sessão do Executor; ele corrige código.
+   - Se falha em passo manual → nova sessão do Executor; ele corrige código também, com base na evidência.
+3. **Passo manual sem evidência anexada = passo não-executado.** Não conta como aprovado.
+4. Se apenas todos os testes automatizados e passos manuais passaram, prossiga para Passo 9.
 
 ### Passo 9 — Preparar checklist arquitetural para Gate humano 3
 
@@ -252,7 +330,9 @@ Se o humano identificar problema na revisão arquitetural, o resultado do Gate �
 ### Passo 11 — Declarar Fase Homologar concluída
 
 Só declare concluído quando:
-- [ ] Todo critério de aceite e cada cláusula arquitetural tem teste passando.
+- [ ] Todo critério de aceite e cada cláusula arquitetural tem cobertura passando (teste automatizado **ou** passo manual com evidência anexa).
+- [ ] Se aplicável (N3 + fidelidade): cada aspecto de fidelidade tem cobertura passando.
+- [ ] Se há passos manuais: **todos** foram executados com evidência anexa (nada de "confiei que passou").
 - [ ] O checklist arquitetural foi respondido pelo humano (não pulado, não respondido por você).
 - [ ] Nenhuma falha ficou sem resolução ou sem decisão explícita do humano.
 
