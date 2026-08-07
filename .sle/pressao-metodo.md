@@ -1,0 +1,93 @@
+# Log de pressão sobre o método SLE
+
+> Instrumento de evolução do próprio método, análogo ao [`pressao-catalogo.md`](./pressao-catalogo.md) (que existe para o vocabulário de domínios). Este log captura pressões **sistêmicas** — não sobre um domínio isolado, mas sobre o funcionamento do SLE como um todo.
+>
+> **Localização canônica:** `.sle/pressao-metodo.md`. Repositórios legados podem usar `.echo/pressao-metodo.md` como alias — as skills leem `.sle/` primeiro; se ausente, caem para `.echo/`.
+
+## Para que serve
+
+O SLE tem quatro papéis operando em separação estrutural, três invariantes de enforcement, três camadas de rigor de teste, e várias regras que dependem de julgamento. Nenhuma dessas peças é infalível — algumas são deliberadamente permissivas (degrada, não bloqueia). Este log é o único instrumento que revela quando e como o método está sob pressão.
+
+**Cada entrada aqui é um sinal para a Fase Observar.** Um caso ocasional é ruído; padrão persistente é dado para agregação (A4) e potencialmente para reforma do método.
+
+## Tipos de entrada
+
+Este log recebe múltiplos tipos de entrada, cada um proveniente de uma skill diferente. **A estrutura das colunas varia por tipo** — cada seção abaixo tem sua própria tabela.
+
+### Tipo A — Retorno do Validador (spec vaga / não-falsificável)
+
+Origem: `validator/SKILL.md`, Passo 2 (Gate de tradutibilidade). Quando o Validator identifica que um item da spec não é tradutível em teste executável, ele devolve a spec ao Designer e registra aqui.
+
+| data | spec | itens devolvidos | motivo em uma frase |
+|---|---|---|---|
+
+*(sem registros até o momento)*
+
+### Tipo B — Item que caiu em validação manual (v3)
+
+Origem: `validator/SKILL.md`, Passo 3.1. Quando o repositório declara `tdd-aplicavel: parcial` ou `manual` no manifesto, cada item da spec que não vira teste automatizado (e vira passo manual em `manual-validation.md`) é registrado aqui. Padrão persistente ("essa codebase vive em manual") é sinal para reflexão sobre modernização.
+
+| data | spec | item | tag (@criterio / @contrato / @fidelidade) | motivo em uma frase |
+|---|---|---|---|---|
+
+*(sem registros até o momento)*
+
+### Tipo C — Retorno do Executor (bug semântico em teste ou passo manual, v4)
+
+Origem: `executor/SKILL.md`, bloco "Regra de ouro operacional — poder estrutural de retorno". Quando o Executor identifica bug semântico em teste automatizado ou passo manual, ele devolve ao Validator e registra aqui. Padrão persistente ("Validador X faz muito teste ruim") é sinal para calibrar como o Validator escreve testes.
+
+| data | spec | artefato | tipo de problema | justificativa em uma frase |
+|---|---|---|---|---|
+
+*(sem registros até o momento)*
+
+Legenda de tipos de problema:
+- `bug de assertion` — teste verifica valor errado
+- `mock errado` — mock/stub configurado de forma que muda lógica do setup
+- `cobertura incorreta` — tag do teste diz cobrir X, mas verifica Y
+- `passo impossível` — passo M[n] pede ação que não faz sentido (dependência ausente, comando inexistente, evidência incoerente)
+
+### Tipo D — Decisão humana de pular Gate 3 arquitetural
+
+Origem: `validator/SKILL.md`, Passo 10 (Gate humano 3). Quando o humano opta por pular a revisão arquitetural, o Validador registra aqui. Padrão persistente ("humano sempre pula") é sinal de que Gate 3 pode estar mal-desenhado, ou de que a disciplina de revisão precisa recalibração.
+
+| data | spec | motivo declarado pelo humano (opcional) |
+|---|---|---|
+
+*(sem registros até o momento)*
+
+### Tipo E — Retrospectiva do Observer (A4 agregado)
+
+Origem: `observer/SKILL.md`, Passo 5 (fluxo cadência-driven). Retrospectiva periódica do Observer agrega padrões observados no período. Diferente dos tipos A-D (que são pontuais), Tipo E é **agregação** — o Observer lê os tipos A-D acumulados e destila padrão.
+
+### Retrospectiva [período: AAAA-MM-DD a AAAA-MM-DD]
+
+*(estrutura livre — segue o formato do output A4 do Observer)*
+
+*(sem retrospectivas até o momento)*
+
+### Tipo F — Ajuste do próprio método (excepcional)
+
+Origem: humano decide que o método precisa mudança concreta após uma retrospectiva Tipo E ou um sinal externo. Ajustes de método deste tipo mudam skills, template, manifesto ou tese — cada ajuste é registrado com data, motivo, e escopo dos arquivos alterados.
+
+Estes ajustes ficam também documentados como "histórico de revisões" na tese (`propostas/spec-loop-engineering.md`) — este log é a entrada resumida com pointer.
+
+| data | ajuste | motivo em uma frase | escopo | pointer para detalhe |
+|---|---|---|---|---|
+| 2026-08-07 | v2 (fidelidade) | protótipo N3 descartado gerava frustração contratual | designer, validator, executor, tese, spec, plano | tese, seção "Histórico de revisões" |
+| 2026-08-07 | v3 (TDD contextualizado) | codebases legadas não suportam TDD ortodoxo | validator, tese, spec, plano | tese, seção "Histórico de revisões" |
+| 2026-08-07 | v4 (Clean Code universal + refactor não-semântico) | testes ruins do Validator geravam custo de manutenção; Executor deve poder refatorar | executor, validator, tese, spec, plano | tese, seção "Histórico de revisões" |
+
+## Formato geral
+
+- **data** — quando o sinal aconteceu, em `AAAA-MM-DD`
+- **spec** — qual especificação estava em curso (quando aplicável)
+- Colunas específicas variam por tipo (ver seções acima)
+
+## Como usar este log
+
+**Escrita:** cada skill que gera pressão sabe qual seção usar (declarado nos passos correspondentes das skills). Se você está anotando manualmente, use o formato da seção apropriada.
+
+**Leitura:** o Observer é o principal cliente deste log em modo cadência-driven. Você (humano) também pode ler diretamente para calibração disciplinar (Atividade A5, não delegável ao Observer).
+
+**Curadoria:** o log cresce sem podas automáticas. A retrospectiva periódica do Observer produz Tipo E que resume e aponta padrões — mas as entradas Tipo A-D originais permanecem. Se o arquivo ficar grande demais, considere arquivar por período (`.sle/pressao-metodo-2026-H1.md`) mantendo apenas o período corrente ativo.
