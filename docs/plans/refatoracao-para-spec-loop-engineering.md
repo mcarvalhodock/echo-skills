@@ -6,6 +6,8 @@
 > **v2 — 2026-08-07 (ajuste durante Fase C):** durante a execução dos passos 2–5, foi identificada a *fissura da fidelidade* (protótipo N3 descartado gera frustração contratual). Ajuste aplicado à tese v2, spec v2, e reflete-se aqui: passos 2, 3, 4 ganham revisão de conteúdo (protótipo preservado, testes de fidelidade Camada 3, referência não-copiável); passo 6 (template) ganha adição da seção "Artefatos de fidelidade (N3)". Nenhum passo novo é adicionado; refinamento de passos existentes. Ver [Histórico de revisões](#histórico-de-revisões).
 >
 > **v3 — 2026-08-07 (TDD contextualizado, durante revisão do `validator`):** durante revisão humana do `validator/SKILL.md` foi identificada a lacuna do TDD em codebases legadas. Ajuste aplicado à tese v3, spec v3, e reflete-se aqui: passo 3 ganha adição de Passo 3.1 (validação manual estruturada) e reescrita do Passo 8; passo 7 (manifesto) ganha campo `tdd-aplicavel`. Mapeamento com critérios ganha A6. Nenhum passo novo; refinamento de escopo.
+>
+> **v4 — 2026-08-07 (Clean Code universal + refactor não-semântico, durante revisão do `executor`):** durante revisão humana do `executor/SKILL.md` foi apontado que Clean Code aplica-se a tudo — inclusive aos testes. Ajuste aplicado à tese v4, spec v4, e reflete-se aqui: passo 3 (validator) ganha regra transversal de Clean Code em testes; passo 4 (executor) ganha permissão limitada de refactor não-semântico + Passo 3.5 + poder estrutural de retorno; passo 10-11 (hooks) precisa detectar alteração semântica de teste (diferente de refactor não-semântico) — anota risco. Mapeamento com critérios ganha A7.
 
 ---
 
@@ -36,6 +38,7 @@
    - Recepção de spec (+ enriquecida, + protótipo preservado quando N3)
    - Escrita de testes em **três** camadas: BDD (comportamento) + contrato (arquitetural) + **fidelidade (Camada 3, opcional, apenas em N3 quando aspectos visuais/UX/microinteração emergiram — tags `@fidelidade:visual`, `@fidelidade:ux`, `@fidelidade:microinteracao`)**
    - **TDD contextualizado** (v3): três níveis declarados no manifesto via campo `tdd-aplicavel` (`ortodoxo` / `parcial` / `manual`). Em `parcial` e `manual`, Validator escreve **plano de validação manual estruturada** em `tests/[nome-da-tarefa]/manual-validation.md` com passos que possuem ação concreta, entrada específica, evidência anexável. Fase Homologar exige evidência anexa (log/screenshot/output) para cada passo manual.
+   - **Clean Code universal em testes** (v4): regra transversal antes das camadas — testes seguem o mesmo padrão de Clean Code do manifesto (DRY, programação para interfaces, nomes autoexplicativos, complexidade baixa, sem comentários narrativos). Isso importa porque o Executor tem permissão limitada de refactor não-semântico — quanto melhor o teste original, menos refactor precisa acontecer.
    - **Acesso ao protótipo preservado apenas durante Fase Traduzir** para escrever testes de fidelidade — na Fase Homologar (nova sessão), esse contexto não é carregado
    - Poder de retorno estrutural de spec vaga
    - Handoff de suite (+ plano manual quando aplicável) para `executor`
@@ -47,12 +50,12 @@
 
 4. Escrever `executor/SKILL.md` completo:
    - Frontmatter YAML
-   - Leitura de spec + plano + testes falhando + **protótipo preservado quando N3, como referência de fidelidade visual/UX/comportamental**
+   - Leitura de spec + plano + testes falhando + **protótipo preservado quando N3, como referência de fidelidade visual/UX/comportamental** + **`manual-validation.md` quando `tdd-aplicavel: parcial`/`manual`**
    - **Proibição explícita de copiar código do protótipo** — implementação é do zero, seguindo Clean Code; a fidelidade é preservada como *observável* (verificado pelos testes de fidelidade da Camada 3)
    - Leitura de padrão Clean Code do manifesto
-   - Implementação até testes passarem
-   - Proibição explícita de escrever ou modificar testes
-   - Handoff de volta para `validator` (Homologar)
+   - Implementação até testes passarem (automatizados) + plano manual ser executável no ambiente de dev
+   - **Proibição explícita de alteração semântica de testes** (assertion, comportamento verificado, cobertura por tag). **Permissão limitada de refactor não-semântico** (v4): DRY, fixture, nomes, mock de interface, formatação — sempre com verificação suíte antes/depois (número de testes, assertions e cobertura por tag idênticos), com refactor documentado no handoff. **Poder estrutural de retorno** (v4): devolve ao Validador quando identifica bug semântico em teste/passo manual, registrando em `.sle/pressao-metodo.md`.
+   - Handoff de volta para `validator` (Homologar), reportando: suíte automatizada passando, plano manual executável, refactor não-semântico aplicado (se houver) com escopo
 
 ### Fase 5 — Skill `observer` (conduz Observar)
 
@@ -92,7 +95,7 @@
 
 10. Criar hooks em `tooling/hooks/`:
     - `block-designer-writing-code/` (implementação em Python + docs em md)
-    - `block-executor-writing-tests/`
+    - `block-executor-writing-tests-semantically/` (v4: bloqueia alteração semântica de teste — assertion, comportamento verificado, cobertura por tag; permite refactor não-semântico sob detecção suíte antes/depois idêntica)
     - `block-validator-writing-code/`
     - `README.md` explicando como cada hook é ativado no harness (Claude Code, Cursor)
 
@@ -170,6 +173,7 @@
 - **A4** → pré-atendido pela existência da spec, validado pela ausência de retrabalho durante Fases 2–9
 - **A5** (v2) → passos 2, 3, 4 (regras de acesso ao protótipo preservado nas três skills afetadas)
 - **A6** (v3) → passo 3 (TDD contextualizado no `validator` com plano de validação manual estruturada)
+- **A7** (v4) → passos 3 e 4 (Clean Code em testes no `validator`; refactor não-semântico + poder de retorno no `executor`); passo 10 (hook de bloqueio de alteração semântica de teste)
 - **B1** → passos 2–5 (declaração explícita de isolamento em cada SKILL.md)
 - **B2** → passos 10–11
 - **B3** → passos 12–13
@@ -185,7 +189,7 @@
 - **E3** → passos 9, 16, e auditoria no passo 18
 - **E4** → passo 17
 
-Todos os 20 critérios têm cobertura explícita. Nenhum critério órfão.
+Todos os 21 critérios têm cobertura explícita. Nenhum critério órfão.
 
 ## Ordem de execução e dependências
 
@@ -233,6 +237,8 @@ Manter `.echo/manifesto.md` como redirect e criar `.sle/manifesto.md` como princ
 ---
 
 ## Histórico de revisões
+
+**v4 — 2026-08-07 (Clean Code universal + refactor não-semântico, durante revisão do `executor`):** durante revisão humana do `executor/SKILL.md` foi apontado que boas práticas de código prevalecem em tudo — inclusive nos testes escritos pelo Validador. Ajuste aprovado explicitamente (não desvio silencioso). Passo 3 (validator) ganhou regra transversal de Clean Code em testes. Passo 4 (executor) ganhou permissão limitada de refactor não-semântico + Passo 3.5 + poder estrutural de retorno. Passo 10 (hooks) precisa distinguir alteração semântica de refactor não-semântico. Mapeamento com critérios ganhou A7.
 
 **v3 — 2026-08-07 (TDD contextualizado, durante revisão do `validator`):** durante revisão humana do `validator/SKILL.md` foi apontada lacuna do TDD ortodoxo em codebases legadas. Ajuste aprovado explicitamente (não desvio silencioso). Passo 3 foi reescrito para incluir Passo 3.1 (plano de validação manual estruturada) e Passo 8 ampliado (execução manual com evidência anexa). Passo 7 (manifesto) ganhou campo `tdd-aplicavel`. Mapeamento com critérios ganhou A6.
 

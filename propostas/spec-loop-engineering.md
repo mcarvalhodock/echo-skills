@@ -161,6 +161,35 @@ O que cada papel enxerga define se "independência" é estrutural ou só declara
 - **Validador vê o protótipo (N3) apenas na Fase Traduzir.** Acesso é específico à escrita de testes de fidelidade. Ao entrar em Fase Homologar (nova sessão), o Validador **não** carrega esse contexto — mantém isolamento de execução.
 - **Executor vê testes completos (TDD clássico) + protótipo N3 como referência não-copiável.** Ele sabe exatamente o que precisa passar. Overfitting e cópia de protótipo são riscos reconhecidos; a mitigação vem da qualidade da spec, da revisão arquitetural, e dos testes de fidelidade que verificam preservação sem exigir cópia.
 
+## Clean Code universal e a permissão limitada de refactor não-semântico (v4)
+
+Clean Code no SLE é **contextualizado ao repositório** (declarado no manifesto) mas **universal em escopo** — aplica-se a **todo código escrito por qualquer skill**, incluindo testes escritos pelo Validador. Testes ruins são passivo do repositório tanto quanto código de produção ruim.
+
+**Isso cria uma tensão real com o Invariante 2 (Executor ≠ Validador):** se o Validador escreve testes que violam DRY / programação para interfaces / boas práticas, o Executor sente o custo diretamente — implementa contra código de teste sub-ótimo e potencialmente propaga o problema.
+
+**Resolução v4 (refinamento do Invariante 2, não sua revogação):**
+
+- **Semântica do teste** = *o que* o teste verifica (assertion, comportamento observado, cobertura declarada). Esta permanece **exclusiva do Validador**.
+- **Forma do código do teste** = *como* o teste é escrito (fixture, DRY, nomes, complexidade). Esta pode ser **refatorada pelo Executor** com regras rígidas de não-alteração semântica.
+
+**Regras do refactor não-semântico:**
+- Permitido: extrair fixture, aplicar DRY, renomear helper, substituir mock de implementação por mock de interface, formatação, imports.
+- Proibido: alterar assertion, cobertura por tag, comportamento verificado, adicionar/remover cenários.
+- **Verificação obrigatória:** rodar suíte antes e depois — mesmo número de testes, assertions, cobertura por tag. Divergência = alteração semântica não declarada = reverte + retorno.
+- **Documentação obrigatória:** cada refactor aplicado é declarado no handoff, com arquivos tocados e escopo.
+
+**Poder estrutural de retorno do Executor:**
+- Análogo ao poder de retorno do Validador (spec vaga). Se o Executor identifica bug semântico em teste ou passo manual (assertion errada, mock quebrado, cobertura mal declarada, passo M[n] impossível), ele bloqueia o fluxo, registra em `.sle/pressao-metodo.md`, e o ciclo volta ao Validador.
+- Padrão persistente ("Validador X faz muito teste ruim") é sinal para Fase Observar.
+
+**Como o Invariante 2 sobrevive:**
+O invariante 2 diz "quem valida não implementa; quem implementa não valida" — e *validar* é decidir o critério de correção, não escrever texto de código. O Executor refatorando fixture *não* está validando (o critério permanece o mesmo). Portanto o invariante permanece intacto **em substância**, com relaxamento **em forma**.
+
+**Risco reconhecido:** a fronteira "semântica vs. não-semântica" pode ser esticada por Executor apressado. Mitigações estruturais:
+- Handoff declara o refactor por escrito (rastreabilidade).
+- Validador na Fase Homologar re-inspeciona arquivos de teste modificados (formato/estrutura, não semântica).
+- Camada 3 (CI) roda suíte antes/depois e sinaliza divergência em cobertura por tag.
+
 ## TDD contextualizado — três níveis
 
 Análogo ao Clean Code contextualizado (rigor declarado no manifesto), o SLE reconhece que **TDD ortodoxo não é viável em todo repositório**. Codebases legadas com acoplamento excessivo, framework de teste ruim, ou lógica só observável em nível de sistema, tornam TDD clássico impraticável — e forçar TDD nesses cenários vira teatro: teste que "sempre passa" ou nenhum teste com bikeshed textual em cima.
@@ -349,6 +378,8 @@ Nenhuma dessas pendências é ambiguidade da tese. São decisões operacionais q
 ---
 
 ## Histórico de revisões
+
+**v4 — 2026-08-07 (Clean Code universal + refactor não-semântico):** durante revisão humana do `executor/SKILL.md`, foi apontado que boas práticas de código (DRY, programação para interfaces) devem prevalecer em tudo — inclusive nos testes escritos pelo Validador. Refinamento do Invariante 2 (Executor ≠ Validador): mantém-se a exclusividade da *semântica* do teste com o Validador (o que o teste verifica), mas o Executor ganha permissão limitada de *refactor não-semântico* nos testes (DRY, fixture, nomes, mock de interface) com regras de verificação antes/depois. Executor ganha também poder estrutural de retorno análogo ao do Validador — devolve suite ao Validador quando identifica bug semântico. Validador ganha, no Passo 3, regra explícita: Clean Code aplica-se a testes também. Alterações refletidas em: nova seção *Clean Code universal e a permissão limitada de refactor não-semântico*; skills `executor` (nova permissão limitada, Passo 3.5, poder de retorno) e `validator` (regra transversal no Passo 3); spec e plano da refatoração ganham crítério A7 e passos correspondentes.
 
 **v3 — 2026-08-07 (TDD contextualizado):** durante a revisão do `validator/SKILL.md`, foi identificada a lacuna de codebases legadas onde TDD ortodoxo é inviável. O método assumia TDD ortodoxo em todos os casos, o que gerava incentivo a fingir cobertura (testes que sempre passam, ou nenhum teste com escopo suprimido). Ajuste: introduzido campo `tdd-aplicavel` no manifesto com três níveis (`ortodoxo | parcial | manual`); `parcial` e `manual` habilitam plano de validação manual estruturada com regras anti-fraude (ação concreta, entrada específica, evidência anexável); Fase Homologar exige evidência anexa para cada passo manual. Alterações refletidas em: nova seção *TDD contextualizado — três níveis*; skill `validator` (novo Passo 3.1, Passo 4 e Passo 8 ampliados); spec e plano da refatoração ganham crítério e passo correspondentes.
 

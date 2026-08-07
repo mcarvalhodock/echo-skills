@@ -115,7 +115,19 @@ Não avance para Passo 3 até que o Designer reformule e você seja reinvocado c
 
 ### Passo 3 — Escrever testes em camadas
 
-Se todos os itens passaram no gate de tradutibilidade, escreva testes agrupados em camadas:
+Se todos os itens passaram no gate de tradutibilidade, escreva testes agrupados em camadas.
+
+**Regra transversal — Clean Code aplica-se a testes também (v4):**
+
+Os testes que você escreve são código de produção do repositório — não são artefato descartável. Seguem o mesmo padrão de Clean Code declarado no `.sle/manifesto.md` que o código de produção segue.
+
+- **DRY entre testes:** fixture, setup, helpers duplicados são extraídos. Se dois testes têm 80% de setup igual, ambos usam a mesma fixture.
+- **Programação para interfaces:** mock/stub em interface abstrata, não em implementação concreta. Um teste que mocka `ConcreteUserRepository` acopla-se à implementação; um que mocka `UserRepository` (interface) permanece válido através de mudanças de implementação.
+- **Nomes autoexplicativos:** nome do teste declara o comportamento verificado (`test_creates_order_with_valid_payload`, não `test_1` ou `test_orders`).
+- **Complexidade baixa em cada teste:** se um teste está complicado demais (múltiplos setup, muitos mocks, branching lógico), é sinal de que o crítério que ele cobre está vago ou fatiado errado — reformule o teste ou devolva o crítério ao Designer.
+- **Sem comentários narrativos:** teste bem-escrito não precisa explicar "esse teste verifica X".
+
+Isso importa porque o **Executor tem permissão limitada de refactor não-semântico** (v4) — se você escrever testes ruins, o Executor pode aplicar refactor para deixá-los apresentáveis. Você quer que essa permissão seja *pouco usada*, e para isso escreve bem desde o começo.
 
 **Camada 1 — Testes de comportamento (BDD):** um teste (ou grupo) por critério de aceite. Estilo Given/When/Then quando aplicável. Cada teste carrega uma **tag** que identifica qual crítério ele cobre (ex: `@criterio:A1`).
 
