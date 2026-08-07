@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from conftest import POWERSHELL_BIN, run_ps1
+from _helpers import POWERSHELL_BIN, run_ps1
 
 pytestmark = pytest.mark.skipif(
     POWERSHELL_BIN is None, reason="PowerShell não disponível"
@@ -197,7 +197,7 @@ class TestFontesFaltando:
         )
 
         import subprocess
-        from conftest import POWERSHELL_BIN
+        from _helpers import POWERSHELL_BIN
 
         result = subprocess.run(
             [POWERSHELL_BIN, "-NoProfile", "-File", str(copied_script),

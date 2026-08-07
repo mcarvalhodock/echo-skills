@@ -8,7 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from conftest import BASH_BIN, run_sh
+from _helpers import BASH_BIN, run_sh
 
 pytestmark = pytest.mark.skipif(
     BASH_BIN is None, reason="bash não disponível"
