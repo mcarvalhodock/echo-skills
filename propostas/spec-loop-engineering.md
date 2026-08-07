@@ -1,6 +1,10 @@
 # Proposta: Spec Loop Engineering — o próximo desenho do método
 
-> **Status: tese consolidada, ainda não implementada.** Este documento é o output de uma sessão de design que sustenta a próxima refatoração do repositório. Não é ainda uma spec — é a base sobre a qual a spec vai ser escrita, aplicando o próprio método ECHO atual antes de ele ser substituído. Se ECHO não sobrevive a especificar a própria substituição, o problema é dele.
+> **Status: tese consolidada — v2 (ajuste de fidelidade em 2026-08-07).**  
+> **v1 (2026-08-07):** tese original consolidada em sessão de design.  
+> **v2 (2026-08-07):** ajuste no tratamento do protótipo em N3 — de "descartado após consolidação" para "preservado como artefato de fidelidade". Motivo: durante a Fase C da própria refatoração, foi identificada a *fissura da fidelidade* — protótipo descartado perde informação verificada (aspectos visuais, de UX, microinteração), gerando frustração contratual entre o que foi homologado e o que foi implementado. Ver [Histórico de revisões](#histórico-de-revisões) no fim deste documento.
+>
+> Este documento é o output de uma sessão de design que sustenta a próxima refatoração do repositório. Não é ainda uma spec — é a base sobre a qual a spec vai ser escrita, aplicando o próprio método ECHO atual antes de ele ser substituído. Se ECHO não sobrevive a especificar a própria substituição, o problema é dele.
 
 ---
 
@@ -113,10 +117,24 @@ Comparado com E-C-H-O atual (quatro fases), o ciclo do SLE tem seis. A expansão
 
 - **Só existe em N3.** Nível 2 tem plano com cláusulas arquiteturais explícitas, mas não código exploratório.
 - **Consolidação obrigatória.** Se o Designer prototipou, é obrigado a extrair o aprendizado: decisões de comportamento vão pra **spec enriquecida** (que substitui a spec original como referência ativa, com marcador histórico); cláusulas arquiteturais vão pro plano.
-- **Descartado após consolidação.** O protótipo *não* vira código de produção. Executor implementa do zero contra spec enriquecida + testes.
-- **Clean Code relaxado no protótipo.** É código exploratório, não código de produção — o método explicita isso pra evitar que "protótipo bom" vire tentação de aproveitar.
+- **Preservado como artefato de fidelidade após consolidação.** O protótipo é movido para `docs/specs/[nome]-prototipo/` e marcado explicitamente como *não-código-de-produção*. Ele **não vira código de produção**, mas **também não é descartado** — permanece disponível como referência de fidelidade visual, de UX e de microinteração.
+- **Acesso ao protótipo por papel:**
+  - **Executor** o usa como referência de fidelidade durante a implementação. **Não copia código dele** — escreve do zero seguindo Clean Code. Mas o resultado precisa preservar comportamento observável, visual e experiência.
+  - **Validator** o usa apenas durante a Fase Traduzir para escrever testes de fidelidade (Camada 3, ver adiante) quando aspectos visuais/UX emergiram. **Não vê o protótipo na Fase Homologar** — a integridade da homologação exige contexto isolado.
+  - **Designer** o mantém como registro do próprio aprendizado; pode revisitá-lo em iterações futuras.
+- **Clean Code relaxado no protótipo.** É código exploratório, não código de produção — nem a consolidação nem a preservação mudam isso. Executor não deve copiar (o código do protótipo não segue Clean Code do repositório).
 
-O objetivo dessa rigidez é preservar o invariante 1 (Designer ≠ Executor) mesmo quando o Designer produz código durante a fase de desenho.
+O objetivo dessa rigidez é preservar o invariante 1 (Designer ≠ Executor) mesmo quando o Designer produz código durante a fase de desenho — **e** preservar precisão da fidelidade sem terceirizar ao julgamento do Executor.
+
+### Por que "preservar" e não "descartar"
+
+A tese v1 previa descarte após consolidação, sob o argumento de que "aprendizado explícito é capturado na spec enriquecida; o resto é implícito e não deveria atravessar." A tese v2 corrige essa premissa:
+
+**"Aprendizado explícito é capturado" só funciona se o Designer conseguir *nomear* cada aspecto que vale preservar.** Aspectos visuais e de UX resistem a essa nomeação — não porque sejam inefáveis, mas porque nomeá-los depende de vocabulário que só emerge *depois* da experiência do protótipo. Sob pressão de consolidação, o Designer captura o que sabe nomear e perde o resto.
+
+Descartar o protótipo depois disso não é limpeza — é apagar evidência verificada. A frustração contratual resultante (código passa nos testes mas "não é aquilo que a gente aprovou") é o preço concreto da rigidez em v1.
+
+A preservação em v2 preserva a informação sem quebrar o invariante 1: o protótipo continua sendo *referência*, não *código-base*. Executor escreve do zero. Testes de fidelidade escritos pelo Validator verificam que a escrita do zero preservou o que precisava ser preservado.
 
 ---
 
@@ -130,15 +148,33 @@ O que cada papel enxerga define se "independência" é estrutural ou só declara
 | Spec enriquecida (N3) | escreve | ✅ | ✅ | ✅ | ✅ |
 | Plano (com cláusulas arquiteturais) | escreve | ❌ | ✅ | ✅ | ✅ |
 | Protótipo (antes da consolidação) | escreve | ❌ | ❌ | ✅ (histórico) | ✅ |
+| Protótipo N3 preservado (após consolidação) | ✅ (registro) | ✅ **só na Fase Traduzir** | ✅ (referência, não copia) | ✅ | ✅ |
 | Suite de testes (código completo) | ❌ | escreve | ✅ | ✅ | ✅ |
+| Testes de fidelidade (Camada 3, N3) | ❌ | escreve **na Fase Traduzir** | ✅ | ✅ | ✅ |
 | Código do Executor (antes de rodar teste) | ❌ | ❌ | escreve | ✅ | ✅ |
 | Resultado de execução | ❌ | ✅ | ❌ | ✅ | ✅ |
 
-**Três firewalls estruturais** (não retóricos):
+**Quatro firewalls estruturais** (não retóricos):
 
 - **Validador nunca vê o plano.** Cláusulas arquiteturais moram na spec (não só no plano) porque o Validador precisa poder escrever testes de contrato sem ter acesso ao plano. Consequência: a spec ganha uma seção de contrato arquitetural além da seção comportamental.
 - **Validador nunca vê o código do Executor antes de rodar os testes.** Se ele lê o código, pode ajustar teste pra passar. Operação em dois momentos: (1) escreve testes contra spec, submete; (2) recebe artefato do Executor, roda, reporta.
-- **Executor vê testes completos (TDD clássico).** Ele sabe exatamente o que precisa passar. Overfitting é risco reconhecido; mitigação vem da qualidade da spec e da revisão arquitetural, não de cegueira.
+- **Validador vê o protótipo (N3) apenas na Fase Traduzir.** Acesso é específico à escrita de testes de fidelidade. Ao entrar em Fase Homologar (nova sessão), o Validador **não** carrega esse contexto — mantém isolamento de execução.
+- **Executor vê testes completos (TDD clássico) + protótipo N3 como referência não-copiável.** Ele sabe exatamente o que precisa passar. Overfitting e cópia de protótipo são riscos reconhecidos; a mitigação vem da qualidade da spec, da revisão arquitetural, e dos testes de fidelidade que verificam preservação sem exigir cópia.
+
+## Testes de fidelidade (Camada 3, N3 opcional)
+
+Além de testes BDD (comportamento) e testes de contrato (cláusulas arquiteturais), o Validator escreve **testes de fidelidade** em N3 com protótipo preservado, quando aspectos visuais/UX/microinteração emergiram da consolidação.
+
+Exemplos por framework:
+- **Visual:** screenshot tests, snapshot tests de DOM.
+- **UX:** interaction tests (Playwright, Cypress) que reproduzem fluxos observados no protótipo.
+- **Microinteração:** testes de timing, ordem de eventos, feedback ao usuário.
+
+**Regras:**
+- **Opcional, não obrigatório.** Escreva **apenas** quando o aspecto realmente merece verificação mecânica. Teste de fidelidade escrito por completude vira suite frágil.
+- **Tags específicas:** `@fidelidade:visual`, `@fidelidade:ux`, `@fidelidade:microinteracao`.
+- **Cobrem preservação, não igualdade lexical.** O Executor não precisa produzir o mesmo código; precisa produzir o mesmo *observável*.
+- **Falham em silêncio se irrelevantes.** Se a consolidação capturou tudo em BDD/contrato e não sobrou aspecto visual/UX pra cobrir, essa camada simplesmente não é escrita.
 
 ---
 
@@ -292,3 +328,11 @@ Nenhuma dessas pendências é ambiguidade da tese. São decisões operacionais q
 ---
 
 *Este documento nasceu de uma sessão de design em 2026-08-07, conduzida sobre uso continuado das skills atuais e reconhecimento do parentesco com loop engineering (Osmani, jun/2026). Ele é o input para a próxima aplicação do método ECHO nele mesmo — a spec N3 dessa refatoração é o próximo passo, e vai testar se ECHO sobrevive a especificar a própria substituição.*
+
+---
+
+## Histórico de revisões
+
+**v2 — 2026-08-07 (ajuste de fidelidade):** durante a Fase C da própria refatoração, foi identificada a *fissura da fidelidade* — protótipo descartado em N3 perde aspectos visuais/UX/microinteração que a consolidação não conseguiu nomear explicitamente, gerando frustração contratual entre o que foi homologado no protótipo e o que o Executor produziu do zero. Ajuste aplicado: protótipo passa a ser **preservado como artefato de fidelidade** (não descartado); Executor ganha acesso ao protótipo como referência (não como base de cópia); Validator ganha acesso ao protótipo apenas na Fase Traduzir para escrever testes de fidelidade (Camada 3, opcional) quando aplicável. Alterações refletidas em: matriz de visibilidade (linhas novas para *Protótipo N3 preservado* e *Testes de fidelidade*); seção *Regras do protótipo (só Nível 3)*; nova seção *Testes de fidelidade*; skills `designer`, `validator`, `executor` atualizadas em conjunto; spec e plano da refatoração atualizados para refletir o desvio.
+
+**v1 — 2026-08-07:** tese original consolidada em sessão de design. Protótipo em N3 era descartado após consolidação, com a suposição de que aprendizado explícito seria integralmente capturado na spec enriquecida.

@@ -1,6 +1,8 @@
 # Spec: Refatoração ECHO → Spec Loop Engineering (SLE)
 
 > **Nível 3 — Complexo.** Muda identidade do repositório, adiciona componente executável, refatora skills já usadas em produção pessoal. Cabe todo o rigor de N3.
+>
+> **v2 — 2026-08-07 (ajuste durante Fase C).** Durante a implementação (Passos 2–5 do plano), foi identificada a *fissura da fidelidade*: protótipo descartado em N3 gera frustração contratual entre o que foi homologado e o que é implementado. Ajuste aplicado à tese ([v2 do documento base](../../propostas/spec-loop-engineering.md)) e refletido aqui: (a) critério A5 novo — regras de acesso ao protótipo preservado; (b) critério C1 ampliado — template inclui seção de artefatos de fidelidade; (c) caso de borda novo — enforcement de "não-cópia" de protótipo; (d) restrição adicional — protótipo preservado é código *não-produção* e não deve ser importado em `src/`.
 
 ---
 
@@ -20,6 +22,7 @@ Uso continuado das skills atuais confirmou disciplina positiva mas expôs três 
 - [ ] **A2.** Cada `SKILL.md` declara explicitamente: papel executado, fases cobertas, invariantes que respeita, e qual skill invoca no próximo passo do ciclo.
 - [ ] **A3.** As três skills antigas (`especificar/`, `planejar/`, `homologar/`) foram removidas em commit dedicado com mensagem que referencia o commit de introdução do SLE.
 - [ ] **A4.** A skill `designer` foi usada com sucesso pra conduzir esta própria spec — teste de ácido do método atual.
+- [ ] **A5.** As três skills afetadas pela fidelidade documentam explicitamente as regras do protótipo preservado (N3): `designer` documenta preservação em `docs/specs/[nome]-prototipo/` com marcação de não-código-de-produção; `validator` documenta acesso ao protótipo apenas durante Fase Traduzir para escrever testes de fidelidade (Camada 3, opcional); `executor` documenta acesso como referência não-copiável de fidelidade visual/UX/comportamental, com Clean Code obrigatório na escrita do zero.
 
 ### Grupo B — Invariantes enforçados
 
@@ -29,7 +32,7 @@ Uso continuado das skills atuais confirmou disciplina positiva mas expôs três 
 
 ### Grupo C — Contratos revisados
 
-- [ ] **C1.** `template-especificacao.md` foi atualizado com: seção "contrato arquitetural" separada da comportamental; gate explícito de falsificabilidade; nota sobre spec enriquecida em N3.
+- [ ] **C1.** `template-especificacao.md` foi atualizado com: seção "contrato arquitetural" separada da comportamental; gate explícito de falsificabilidade; nota sobre spec enriquecida em N3; **seção "Artefatos de fidelidade (N3)"** que registra caminho do protótipo preservado quando aplicável e lista aspectos visuais/UX/microinteração que exigem preservação.
 - [ ] **C2.** Manifesto do repo `echo-skills` foi atualizado com: referência ao padrão de código local; hooks ativos declarados; CI templates declarados; nível de rigor esperado; domínios ativos revisados (`plataforma` e `integração` passam a ativos).
 - [ ] **C3.** Log global `.sle/pressao-metodo.md` foi criado com cabeçalho apropriado, pronto pra receber entradas.
 - [ ] **C4.** `dominios.md` mantém corpo intacto, atualiza apenas referências a "método ECHO" para "método SLE".
@@ -56,6 +59,8 @@ Uso continuado das skills atuais confirmou disciplina positiva mas expôs três 
 - Skill `designer` termina spec com pergunta pendurada por bug do próprio agente — como se detecta que ela violou a própria regra de fechamento?
 - Handoff entre skills numa sessão que o harness não suporta subagentes — degradação para "uma skill de cada vez, sem invocação automática"?
 - Autoreferência: a spec do SLE foi escrita em ECHO — isso vira dívida técnica ou fica como marca histórica legítima?
+- Protótipo N3 preservado em `docs/specs/[nome]-prototipo/`: como enforçar que o Executor não copie código (só use como referência)? Enforcement determinístico razoável é bloquear import/require do caminho `docs/specs/*/prototipo/**` a partir de `src/` — atrapalha caso legítimo? Auditoria manual como fallback?
+- Testes de fidelidade (Camada 3) escritos pelo Validador em N3 podem ficar frágeis (screenshot muda a cada refactor visual sem regressão real). Como sinalizar diferença entre "quebra legítima" e "regressão de fidelidade" sem virar ruído contínuo?
 
 ## Domínios envolvidos
 
@@ -83,6 +88,7 @@ Manifesto atual do `echo-skills` declara zero domínios ativos: *"toda mudança 
 - Todas as skills continuam com conteúdo em português (mesmo com pasta em inglês).
 - Compatibilidade com Claude Code é mandatória; compatibilidade com Cursor é desejável — declarar explicitamente onde diverge, se divergir.
 - Nenhuma dependência de serviços externos pagos como pré-requisito pra usar SLE.
+- **Protótipo N3 preservado é código *não-produção*.** Não deve ser importado em `src/`, não conta em cobertura, não roda em CI de produção. Convive no repositório como referência viva de fidelidade, análogo a fixtures ou mocks — mas dedicado ao ciclo do SLE.
 
 ## Ambiente / destino
 
@@ -164,3 +170,11 @@ Incertezas genuínas que só uso real vai responder:
 ---
 
 *Spec conduzida via skill `especificar` do método ECHO em 2026-08-07 — teste de ácido do próprio método antes de ele ser substituído. Base intelectual em [`propostas/spec-loop-engineering.md`](../../propostas/spec-loop-engineering.md). Próximo passo: encaminhamento para skill `planejar` (Fase C), que decide sobre fatiabilidade e produz o plano de implementação a ser aprovado antes de qualquer código.*
+
+---
+
+## Histórico de revisões
+
+**v2 — 2026-08-07 (ajuste de fidelidade durante Fase C):** identificação, durante a implementação das skills (Passos 2–5 do plano), da lacuna do descarte de protótipo em N3. Skills já commitadas (`designer`, `validator`, `executor`, `observer`) revisadas em conjunto; tese `propostas/spec-loop-engineering.md` promovida a v2. Critérios adicionados: A5, C1 ampliado. Casos de borda adicionados: enforcement de não-cópia de protótipo, fragilidade de testes de fidelidade. Restrição adicional: protótipo preservado é código não-produção. A refatoração continua no mesmo escopo, com esses acréscimos absorvidos.
+
+**v1 — 2026-08-07:** spec original conduzida via `especificar` do ECHO — teste de ácido do próprio método antes da substituição. Protótipo em N3 era descartado após consolidação.

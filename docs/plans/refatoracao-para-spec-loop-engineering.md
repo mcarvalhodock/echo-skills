@@ -2,6 +2,8 @@
 
 > Referência: spec em [`docs/specs/refatoracao-para-spec-loop-engineering.md`](../specs/refatoracao-para-spec-loop-engineering.md).  
 > Aprovado em 2026-08-07.
+>
+> **v2 — 2026-08-07 (ajuste durante Fase C):** durante a execução dos passos 2–5, foi identificada a *fissura da fidelidade* (protótipo N3 descartado gera frustração contratual). Ajuste aplicado à tese v2, spec v2, e reflete-se aqui: passos 2, 3, 4 ganham revisão de conteúdo (protótipo preservado, testes de fidelidade Camada 3, referência não-copiável); passo 6 (template) ganha adição da seção "Artefatos de fidelidade (N3)". Nenhum passo novo é adicionado; refinamento de passos existentes. Ver [Histórico de revisões](#histórico-de-revisões).
 
 ---
 
@@ -22,15 +24,16 @@
    - Conduta de spec com gate de falsificabilidade explícito
    - Classificação por domínio (mantém lógica atual)
    - Expansão para plano arquitetural com cláusulas
-   - Regras do protótipo N3 (só nesse nível, consolidação obrigatória)
-   - Handoff estrutural para `validator`
+   - Regras do protótipo N3 (só nesse nível, consolidação obrigatória, **preservado como artefato de fidelidade em `docs/specs/[nome]-prototipo/` após consolidação — não descartado**)
+   - Handoff estrutural para `validator`, incluindo indicação do caminho do protótipo preservado quando aplicável
 
 ### Fase 3 — Skill `validator` (conduz Traduzir + Homologar)
 
 3. Escrever `validator/SKILL.md` completo:
    - Frontmatter YAML
-   - Recepção de spec (+ enriquecida)
-   - Escrita de testes em duas camadas: BDD (comportamento) + contrato (arquitetural)
+   - Recepção de spec (+ enriquecida, + protótipo preservado quando N3)
+   - Escrita de testes em **três** camadas: BDD (comportamento) + contrato (arquitetural) + **fidelidade (Camada 3, opcional, apenas em N3 quando aspectos visuais/UX/microinteração emergiram — tags `@fidelidade:visual`, `@fidelidade:ux`, `@fidelidade:microinteracao`)**
+   - **Acesso ao protótipo preservado apenas durante Fase Traduzir** para escrever testes de fidelidade — na Fase Homologar (nova sessão), esse contexto não é carregado
    - Poder de retorno estrutural de spec vaga
    - Handoff de suite para `executor`
    - Retorno posterior para rodar testes contra código do Executor
@@ -41,7 +44,8 @@
 
 4. Escrever `executor/SKILL.md` completo:
    - Frontmatter YAML
-   - Leitura de spec + plano + testes falhando
+   - Leitura de spec + plano + testes falhando + **protótipo preservado quando N3, como referência de fidelidade visual/UX/comportamental**
+   - **Proibição explícita de copiar código do protótipo** — implementação é do zero, seguindo Clean Code; a fidelidade é preservada como *observável* (verificado pelos testes de fidelidade da Camada 3)
    - Leitura de padrão Clean Code do manifesto
    - Implementação até testes passarem
    - Proibição explícita de escrever ou modificar testes
@@ -63,6 +67,7 @@
    - Adicionar seção "Contrato arquitetural" em N2 e N3
    - Adicionar gate de falsificabilidade explícito
    - Adicionar nota sobre spec enriquecida em N3
+   - **Adicionar seção "Artefatos de fidelidade (N3)"** — registra caminho do protótipo preservado quando aplicável e lista aspectos visuais/UX/microinteração que exigem preservação (base para o Validator escrever testes de fidelidade Camada 3)
    - Substituir referências ECHO → SLE
 
 7. Criar `.sle/manifesto.md` com campos novos:
@@ -159,10 +164,11 @@
 - **A2** → passos 2–5 (estrutura obrigatória em cada SKILL.md)
 - **A3** → passo 19
 - **A4** → pré-atendido pela existência da spec, validado pela ausência de retrabalho durante Fases 2–9
+- **A5** (v2) → passos 2, 3, 4 (regras de acesso ao protótipo preservado nas três skills afetadas)
 - **B1** → passos 2–5 (declaração explícita de isolamento em cada SKILL.md)
 - **B2** → passos 10–11
 - **B3** → passos 12–13
-- **C1** → passo 6
+- **C1** → passo 6 (com adição da seção "Artefatos de fidelidade (N3)" em v2)
 - **C2** → passo 7
 - **C3** → passo 8
 - **C4** → passo 9
@@ -174,7 +180,7 @@
 - **E3** → passos 9, 16, e auditoria no passo 18
 - **E4** → passo 17
 
-Todos os 18 critérios têm cobertura explícita. Nenhum critério órfão.
+Todos os 19 critérios têm cobertura explícita. Nenhum critério órfão.
 
 ## Ordem de execução e dependências
 
@@ -218,3 +224,11 @@ Manter `.echo/manifesto.md` como redirect e criar `.sle/manifesto.md` como princ
 ---
 
 *Plano gerado pela skill `planejar` do método ECHO em 2026-08-07 — parte do próprio ciclo que este plano vai substituir. A execução segue estritamente a ordem acima; desvios exigem nova aprovação, não improviso silencioso.*
+
+---
+
+## Histórico de revisões
+
+**v2 — 2026-08-07 (ajuste durante Fase C):** durante execução dos passos 2–5, foi identificada a *fissura da fidelidade* (protótipo N3 descartado apaga aspectos visuais/UX/microinteração verificados). Ajuste aprovado explicitamente pelo humano (não desvio silencioso — obedeceu ao Passo 4 da `planejar`). Passos 2, 3, 4 foram revisados retroativamente para acomodar protótipo preservado + testes de fidelidade (Camada 3) + acesso não-copiável. Passo 6 ganhou adição de "Artefatos de fidelidade (N3)" no template. Nenhum passo novo; refinamento de escopo dentro dos existentes. Mapeamento com critérios ganhou A5. Skills já commitadas (`designer`, `validator`, `executor`) foram reescritas em conjunto para refletir v2.
+
+**v1 — 2026-08-07:** plano original aprovado. Protótipo N3 seria descartado após consolidação; skills não previam Camada 3 de testes de fidelidade nem acesso do Executor a protótipo.
