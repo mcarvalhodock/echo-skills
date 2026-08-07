@@ -12,3 +12,10 @@
 # O que NÃO é ignorado, e por quê:
 #   .echo/manifesto.md        — declaração de ativação local, pertence ao repositório
 #   .echo/pressao-catalogo.md — evidência de evolução do catálogo, precisa acumular ao longo do tempo
+#   .sle/manifesto.md         — sucessor do manifesto local (v2 do método)
+#   .sle/pressao-metodo.md    — log global de pressões sistêmicas do método
+
+# Artefatos de execução dos hooks/testes — não pertencem ao repositório.
+__pycache__/
+.pytest_cache/
+*.pyc
