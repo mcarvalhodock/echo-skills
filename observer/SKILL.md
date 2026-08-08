@@ -177,6 +177,8 @@ Leia:
   - **Itens que caíram em validação manual (v3)** — Validator registra cada item da spec que não virou teste automatizado, com motivo. Um item ocasional é ruído; padrão persistente é sinal.
   - **Retornos do Executor por bug semântico em teste ou passo manual (v4)** — Executor registra suite/plano devolvida ao Validador com justificativa concreta. Um caso é ruído; padrão persistente é sinal.
   - Decisões humanas de pular Gate 3 arquitetural (Validador registra em `.sle/pressao-metodo.md` quando o humano opta por pular).
+  - **Emendas (v5)** — critério, régua ou código alterado em voo, com quem pediu e se a atestação ficou independente. Emenda é operação normal e saudável: **volume alto não é defeito por si**. O que se lê aqui é a *forma* do padrão — ver abaixo.
+  - **Atestações não-independentes por pagar (v5)** — critérios cuja verificação ficou com quem escreveu a correção. São dívida; o que interessa é se ela é paga ou se envelhece.
   - Anotações do próprio Observer em retrospectivas anteriores.
 - `.sle/pressao-catalogo.md` — recusas de domínio.
 - Logs de aprendizado por spec (`docs/specs/*-log.md`).
@@ -193,6 +195,13 @@ Detecte padrão ao longo do período:
 - [Padrão observado — ex: "Bugs em produção em 4 features distintas apontam para gap comum na spec: comportamento em concorrência"]
 - [Padrão observado — ex (v3): "60% dos itens desta spec caíram em manual — repositório em `parcial` pode estar próximo de fronteira `manual`; sinalizar reflexão sobre modernização"]
 - [Padrão observado — ex (v4): "Executor retornou 5 vezes ao Validador por bug em mock/fixture nesta iteração — sinal de que Clean Code em testes está sendo ignorado pelo Validador"]
+- [Padrão observado — ex (v5): "As emendas se concentram em critérios de temporização/estado assíncrono — a Fase Definir não está perguntando 'e enquanto o dado não chegou?'"]
+- [Padrão observado — ex (v5): "7 atestações não-independentes abertas há mais de um mês — a dívida não está sendo paga, e 'emenda' virou o caminho de menor resistência para pular verificação"]
+
+**Sobre emenda, especificamente (v5).** Emenda é sinal de método vivo, não de método falhando: uma spec que nunca emenda ou é trivial ou está mentindo. O que merece leitura não é o volume, e sim:
+- **Concentração** — sempre no mesmo tipo de critério? Isso é buraco na Fase Definir, e é acionável.
+- **Momento** — emendas sempre na Homologar, nunca antes? A spec está sendo escrita rasa e terceirizando o pensamento para o fim do ciclo.
+- **Dívida que envelhece** — atestação não-independente é aceitável; atestação não-independente esquecida é a invariante 2 morrendo devagar. Essa é a única leitura desta seção que justifica alarme.
 
 **Não-padrão observado:**
 - [Coisas que aconteceram uma vez só e por isso não são padrão ainda — nomeadas para vigilância futura]

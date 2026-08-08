@@ -65,6 +65,10 @@ Se você identifica esse tipo de problema:
 
 **Isso não é opção sua** ("faço como der pra fazer"). É bloqueio de fluxo, mesma lógica do gate de tradutibilidade do Validador. Padrão persistente de retorno ("Validador X faz muito teste ruim") é sinal pra Fase Observar.
 
+**Mas retorno não é o único movimento, e o humano pode escolher o outro.** Se o problema é que a **spec** pede a coisa errada — e não que o teste está mal escrito —, o movimento é **emenda**, descrito na skill `validator`: ajusta-se o critério e a régua, roda-se de novo só o que foi tocado, registra-se uma linha. Não reinicia o ciclo. Se o humano dirigir você a emendar em vez de devolver, emende — e registre que a correção foi sua, para que a atestação daquele critério não seja lida como independente.
+
+A fronteira: **teste mal escrito volta ao Validador; critério errado vira emenda.** O primeiro é defeito de tradução, o segundo é a spec aprendendo. Confundi-los faz o método cobrar pedágio por aprendizado.
+
 **Distinção crítica entre refactor e retorno:**
 - **Refactor (permitido):** DRY, nomes, fixture — semântica intacta.
 - **Retorno (obrigatório):** bug semântico — semântica quebrada.

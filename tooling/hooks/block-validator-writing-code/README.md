@@ -1,6 +1,28 @@
 # Hook: block-validator-writing-code
 
-Enforça a **segunda invariante do SLE**: Executor ≠ Validator.
+> **SUPERSEDIDO NA v5 DO MÉTODO — não habilite sem ler isto.**
+>
+> Este hook enforça a redação antiga da invariante 2, *"o Validator não escreve código de
+> produção"*. A v5 trocou o eixo dessa invariante para **"ninguém assina o que escreveu"**:
+> escrever passou a ser permitido em emenda dirigida pelo humano, e o que se protege é a
+> **atestação**, não a escrita. Ver `metodologia-sle.md` (As 4 invariantes) e a seção
+> "Emenda" em `validator/SKILL.md`.
+>
+> Consequência prática: **em repositório na v5, este hook bloqueia comportamento que o
+> método agora permite** — o Validador tentando aplicar uma emenda que o humano pediu vai
+> bater na parede.
+>
+> Ele não foi removido porque a regra que enforça continua correta **durante a Fase
+> Traduzir**: antes de existir código, o Validador implementar por conta própria destrói a
+> suíte que ele deveria estar derivando da spec. O que falta é o hook distinguir fase de
+> emenda, e ele não distingue — não recebe nem uma coisa nem outra como entrada.
+>
+> **Decisão pendente do humano**, e nenhuma saída é obviamente certa: ensinar o hook a
+> receber `--fase` e `--emenda`; restringi-lo à Fase Traduzir; ou aposentá-lo e deixar a
+> invariante 2 viver só no registro de atestação. Enquanto não se decidir, o hook fica como
+> está e **não deve ser habilitado em repositório que opere na v5**.
+
+Enforça a **redação v4 da segunda invariante do SLE**: Executor ≠ Validator.
 
 ## O que faz
 

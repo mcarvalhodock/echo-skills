@@ -35,11 +35,15 @@ Distribuídas em quatro skills — nunca uma skill faz mais do que seu papel:
 O método inteiro se apoia em regras que **não são aspiracionais**. Elas são verificadas por hooks in-session (`tooling/hooks/`) e por CI (`tooling/ci/`):
 
 1. **Designer ≠ Executor.** Quem desenha (spec, contrato arquitetural, protótipo) não escreve código de produção. Bloqueado pelo hook `block-designer-writing-code`.
-2. **Executor ≠ Validator.** Quem implementa não escreve os testes que validam a própria implementação. Bloqueado pelo hook `block-validator-writing-code`.
+2. **Ninguém assina o que escreveu (v5).** Quem implementa não atesta a própria implementação. Escrever e atestar são atos distintos, e é o segundo que a invariante protege — o primeiro pode ser dirigido pelo humano quando corrigir é mais barato que cerimoniar.
 3. **Nenhum agente é árbitro.** Decisões arquiteturais, disciplinares e de trade-off ficam com o humano em pontos explícitos ("gates").
 4. **Observer é independente.** Quem observa e propõe reconciliações não é quem executou o que está sendo observado.
 
 Se uma dessas invariantes é violada em silêncio, o método degrada — e degrada primeiro na direção que menos dói no curto prazo (aceitar a spec vaga, deixar o executor "consertar" o teste, homologar sem revisar).
+
+**Sobre a invariante 2, que mudou na v5.** Ela dizia "Executor ≠ Validator: quem implementa não escreve os testes que validam a própria implementação", e era enforçada pelo hook `block-validator-writing-code`, que proibia o Validator de tocar em path de produção. O eixo estava errado: a proibição de *escrever* gerava cerimônia sem comprar segurança, e a de *atestar* — que é a que sustenta o generator/evaluator separation — ficava implícita. A v5 troca o eixo. A consequência prática é que o hook `block-validator-writing-code` **enforça uma regra que o método não faz mais**; ver `tooling/hooks/block-validator-writing-code/README.md`.
+
+Uma atestação não-independente **não bloqueia** a entrega: ela é dívida declarada, paga depois com uma passagem curta de outra sessão sobre o critério afetado. O que ela não pode ser é silenciosa.
 
 ---
 
@@ -108,6 +112,8 @@ O que a skill `validator` conduz nesta fase:
 - `manual` — codebase legada onde TDD é inviável. Cria plano de validação manual (`docs/specs/<nome>-manual-validation.md`) com ações concretas, inputs esperados e evidências anexáveis. **Não existe critério "coberto por nada"**: se não vira teste, vira item explícito no plano manual.
 
 **Poder estrutural (v2/v4):** se o Validator descobre que a spec é vaga a ponto de não conseguir escrever teste, ele **retorna estruturalmente para o Designer** (registra no log, sinaliza a spec como insuficiente). Se descobre bug semântico em um teste que o Executor tentou consertar sem alterar semântica, também tem poder de retorno.
+
+**Emenda (v5):** retorno serve para spec que ainda não dá para traduzir, e para desenho que se mostrou errado inteiro. Para **spec que estava certa até o mundo mostrar o contrário**, o movimento é emendar: altera-se o critério, a régua ou o código; roda-se de novo só o que foi tocado; registra-se uma linha em `.sle/pressao-metodo.md`. Não volta fase, não reinicia ciclo, e vale **em qualquer fase, inclusive na Homologar, inclusive depois do verde**. Detalhe operacional na skill `validator`, seção "Emenda".
 
 ---
 

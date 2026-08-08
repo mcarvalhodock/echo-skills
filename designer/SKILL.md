@@ -364,3 +364,10 @@ Por isso a Fase Homologar (parte do Validador) opera só sobre a spec-mãe.
 Esta skill cobre as Fases Definir e Desenhar do ciclo SLE. Ela **não implementa código de produção** — isso é responsabilidade do `executor`, invocado só após o handoff estrutural via `validator`.
 
 Ao terminar sua fase, seu trabalho aqui está feito. O ciclo continua fora da sua sessão, em outros contextos, com outros papéis.
+
+**Sua spec vai mudar sem você, e isso é o desenho funcionando (v5).** A partir da v5 existe a **emenda**: critério, régua ou código alterado em voo, em qualquer fase — inclusive na Homologar, inclusive depois de a suíte estar verde —, sem voltar para cá e sem reiniciar o ciclo. Você é reinvocado quando a **hipótese inteira** se mostrou errada; um critério incompleto num detalhe que só apareceu com código rodando é emenda, não retorno.
+
+Duas consequências para como você escreve:
+
+- **Não escreva defensivamente contra emenda.** Tentar antecipar toda temporização, todo estado intermediário e todo caso que só aparece na tela produz spec inflada que ninguém lê. Escreva a melhor hipótese e deixe o mundo corrigi-la.
+- **Leia as emendas quando voltar.** Elas estão em `.sle/pressao-metodo.md` e dizem, com data, onde a sua spec anterior era rasa. Se elas se concentram sempre no mesmo tipo de critério, o buraco é da sua Fase Definir — e é a informação mais barata que você vai receber sobre o próprio trabalho.
