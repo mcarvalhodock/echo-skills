@@ -44,7 +44,7 @@ Ausência do campo degrada, não bloqueia — o Executor assume boas práticas g
 Os três hooks de enforcement das invariantes 1 e 2 do SLE, entregues na Fase 7 da refatoração:
 
 - [`tooling/hooks/block-designer-writing-code/`](../tooling/hooks/block-designer-writing-code/) — bloqueia Designer escrevendo código de produção
-- [`tooling/hooks/block-validator-writing-code/`](../tooling/hooks/block-validator-writing-code/) — bloqueia Validator escrevendo código de produção. **Supersedido na v5**: a invariante 2 passou a ser "ninguém assina o que escreveu", e este hook bloqueia emenda que o método agora permite. Não habilitar em repositório na v5 — ver o aviso no README do hook
+- [`tooling/hooks/block-validator-writing-code/`](../tooling/hooks/block-validator-writing-code/) — enforça a invariante 2 na redação v5 ("ninguém assina o que escreveu"): bloqueia Validator alterando código de produção **sem emenda declarada e registrada**, e bloqueia incondicionalmente na Fase Traduzir (`--emenda`, `--fase`)
 - [`tooling/hooks/block-executor-writing-tests-semantically/`](../tooling/hooks/block-executor-writing-tests-semantically/) — Executor pode refactor não-semântico em testes (DRY, fixtures), mas não pode alterar semântica (v4)
 
 Cobertura: 35 testes em `tooling/hooks/tests/`, cobrindo bloqueio efetivo e não-interferência em operações permitidas. Ativação em Claude Code / Cursor / git pre-commit documentada em cada README de hook.

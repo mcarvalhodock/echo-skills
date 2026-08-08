@@ -47,6 +47,143 @@ class TestBloqueiaEscritaEmCodigoProducao:
         assert exit_code_declared == 1
 
 
+class TestEmendaV5:
+    """A invariante 2 na redação v5: escrever pode; assinar calado, não."""
+
+    def _log_com(self, raiz: Path, conteudo: str) -> Path:
+        log = raiz / ".sle" / "pressao-metodo.md"
+        log.parent.mkdir(parents=True, exist_ok=True)
+        log.write_text(conteudo, encoding="utf-8")
+        return log
+
+    def test_emenda_registrada_libera_codigo_de_producao(
+        self, project_root_without_manifest: Path
+    ) -> None:
+        log = self._log_com(
+            project_root_without_manifest,
+            "| 2026-08-08 | spec-26 | @criterio:B1 | código | humano | "
+            "não-independente |\n",
+        )
+
+        exit_code, message = validator_hook.evaluate(
+            role="validator",
+            path="src/app.ts",
+            action="edit",
+            manifesto_path=project_root_without_manifest / ".sle" / "manifesto.md",
+            emenda="spec-26",
+            log_path=log,
+        )
+        assert exit_code == 0
+        assert "PERMITIDO em emenda" in message
+        assert "independente" in message
+
+    def test_emenda_sem_registro_e_bloqueada(
+        self, project_root_without_manifest: Path
+    ) -> None:
+        log = self._log_com(project_root_without_manifest, "# vazio\n")
+
+        exit_code, message = validator_hook.evaluate(
+            role="validator",
+            path="src/app.ts",
+            action="edit",
+            manifesto_path=project_root_without_manifest / ".sle" / "manifesto.md",
+            emenda="spec-26",
+            log_path=log,
+        )
+        assert exit_code == 1
+        assert "não registrada" in message
+
+    def test_registro_de_outra_spec_nao_autoriza_esta(
+        self, project_root_without_manifest: Path
+    ) -> None:
+        log = self._log_com(
+            project_root_without_manifest,
+            "| 2026-08-08 | spec-19 | @criterio:A1 | código | humano | "
+            "não-independente |\n",
+        )
+
+        exit_code, _ = validator_hook.evaluate(
+            role="validator",
+            path="src/app.ts",
+            action="edit",
+            manifesto_path=project_root_without_manifest / ".sle" / "manifesto.md",
+            emenda="spec-26",
+            log_path=log,
+        )
+        assert exit_code == 1
+
+    def test_linha_que_cita_a_spec_sem_admitir_quem_assina_nao_basta(
+        self, project_root_without_manifest: Path
+    ) -> None:
+        log = self._log_com(
+            project_root_without_manifest,
+            "| 2026-08-08 | spec-26 | @criterio:B1 | código | humano | ok |\n",
+        )
+
+        exit_code, _ = validator_hook.evaluate(
+            role="validator",
+            path="src/app.ts",
+            action="edit",
+            manifesto_path=project_root_without_manifest / ".sle" / "manifesto.md",
+            emenda="spec-26",
+            log_path=log,
+        )
+        assert exit_code == 1
+
+    def test_marcador_sem_acento_tambem_vale(
+        self, project_root_without_manifest: Path
+    ) -> None:
+        log = self._log_com(
+            project_root_without_manifest,
+            "| 2026-08-08 | spec-26 | @criterio:B1 | codigo | humano | "
+            "nao-independente |\n",
+        )
+
+        exit_code, _ = validator_hook.evaluate(
+            role="validator",
+            path="src/app.ts",
+            action="edit",
+            manifesto_path=project_root_without_manifest / ".sle" / "manifesto.md",
+            emenda="spec-26",
+            log_path=log,
+        )
+        assert exit_code == 0
+
+    def test_na_fase_traduzir_nem_emenda_registrada_libera(
+        self, project_root_without_manifest: Path
+    ) -> None:
+        log = self._log_com(
+            project_root_without_manifest,
+            "| 2026-08-08 | spec-26 | @criterio:B1 | código | humano | "
+            "não-independente |\n",
+        )
+
+        exit_code, message = validator_hook.evaluate(
+            role="validator",
+            path="src/app.ts",
+            action="edit",
+            manifesto_path=project_root_without_manifest / ".sle" / "manifesto.md",
+            emenda="spec-26",
+            fase="traduzir",
+            log_path=log,
+        )
+        assert exit_code == 1
+        assert "Traduzir" in message
+
+    def test_log_inexistente_bloqueia_a_emenda(
+        self, project_root_without_manifest: Path
+    ) -> None:
+        exit_code, _ = validator_hook.evaluate(
+            role="validator",
+            path="src/app.ts",
+            action="edit",
+            manifesto_path=project_root_without_manifest / ".sle" / "manifesto.md",
+            emenda="spec-26",
+            log_path=project_root_without_manifest / ".sle" / "nao-existe.md",
+        )
+        assert exit_code == 1
+
+
 class TestNaoInterfereEmOperacoesPermitidas:
     def test_validator_escrevendo_testes_e_permitido(
         self, project_root_without_manifest: Path

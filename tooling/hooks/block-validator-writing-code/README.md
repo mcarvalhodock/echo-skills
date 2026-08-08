@@ -1,34 +1,28 @@
 # Hook: block-validator-writing-code
 
-> **SUPERSEDIDO NA v5 DO MÉTODO — não habilite sem ler isto.**
->
-> Este hook enforça a redação antiga da invariante 2, *"o Validator não escreve código de
-> produção"*. A v5 trocou o eixo dessa invariante para **"ninguém assina o que escreveu"**:
-> escrever passou a ser permitido em emenda dirigida pelo humano, e o que se protege é a
-> **atestação**, não a escrita. Ver `metodologia-sle.md` (As 4 invariantes) e a seção
-> "Emenda" em `validator/SKILL.md`.
->
-> Consequência prática: **em repositório na v5, este hook bloqueia comportamento que o
-> método agora permite** — o Validador tentando aplicar uma emenda que o humano pediu vai
-> bater na parede.
->
-> Ele não foi removido porque a regra que enforça continua correta **durante a Fase
-> Traduzir**: antes de existir código, o Validador implementar por conta própria destrói a
-> suíte que ele deveria estar derivando da spec. O que falta é o hook distinguir fase de
-> emenda, e ele não distingue — não recebe nem uma coisa nem outra como entrada.
->
-> **Decisão pendente do humano**, e nenhuma saída é obviamente certa: ensinar o hook a
-> receber `--fase` e `--emenda`; restringi-lo à Fase Traduzir; ou aposentá-lo e deixar a
-> invariante 2 viver só no registro de atestação. Enquanto não se decidir, o hook fica como
-> está e **não deve ser habilitado em repositório que opere na v5**.
+Enforça a **segunda invariante do SLE, na redação v5**: ninguém assina o que escreveu.
 
-Enforça a **redação v4 da segunda invariante do SLE**: Executor ≠ Validator.
+## O que mudou da v4 para a v5
+
+A v4 dizia *"o Validator nunca escreve código de produção"*, e este hook bloqueava por path, sem exceção. O eixo estava errado: proibir **escrever** gerava cerimônia sem comprar segurança — recusar corrigir um bug de uma linha em nome da pureza de papel não protege ninguém, só devolve trabalho ao humano. O que sustenta o generator/evaluator separation é proibir **atestar**.
+
+A v5 separa os dois atos, e o hook passa a enforçar a separação em vez do path:
+
+| situação | v4 | v5 |
+|---|---|---|
+| Validator escreve em `src/` sem mais nada | bloqueado | **bloqueado** |
+| Validator escreve em `src/` com emenda registrada | bloqueado | **permitido**, com lembrete |
+| Validator escreve em `src/` com emenda **não** registrada | bloqueado | **bloqueado** |
+| Validator escreve em `src/` na Fase Traduzir | bloqueado | **bloqueado**, incondicional |
+| Validator escreve teste | permitido | permitido |
+
+O que o hook consegue verificar é o **registro**; quem de fato assina é humano. Por isso a checagem é: existe, no log de pressão, uma linha que nomeie esta spec **e** a marque como atestação não-independente? Escrever é permitido; escrever calado não é.
 
 ## O que faz
 
-Bloqueia operações de escrita/edição/deleção quando a skill ativa é `validator` e o caminho alvo bate com padrões de código de produção declarados no manifesto (ou padrões default).
+Bloqueia operações de escrita/edição/deleção quando a skill ativa é `validator` e o caminho alvo bate com padrões de código de produção declarados no manifesto (ou padrões default) — **salvo emenda declarada e registrada**.
 
-Permite:
+Permite sempre:
 
 - Escrita em `tests/`, `test/`, `spec/`, `__tests__/` — testes automatizados (BDD, contrato arquitetural, fidelidade)
 - Escrita em `docs/specs/*-log.md` — homologation log
@@ -37,15 +31,47 @@ Permite:
 - Escrita em `.sle/pressao-metodo.md` — pressão método
 - Escrita em `.sle/pressao-catalogo.md` e `.echo/pressao-catalogo.md` — pressão catálogo (legado)
 
+## Emenda: como declarar
+
+Antes de invocar com `--emenda`, registre a dívida no log de pressão (`.sle/pressao-metodo.md`, ou `.echo/pressao-metodo.md` no alias legado), no formato da seção "Emenda" da skill `validator`:
+
+```markdown
+| data | spec | item | o que mudou | quem pediu | atestação |
+|---|---|---|---|---|---|
+| 2026-08-08 | spec-26 | @criterio:B1 | código | humano | não-independente |
+```
+
+O hook exige as duas coisas **na mesma linha**: o identificador da spec e a marca de não-independência. Uma emenda registrada para outra spec não autoriza esta, e uma linha que cita a spec sem admitir quem assina é menção, não declaração. O marcador vale com e sem acento.
+
 ## Invocação direta
 
 ```powershell
+# Sem emenda: BLOQUEADO (exit 1)
 python tooling/hooks/block-validator-writing-code/hook.py `
   --role validator `
   --path src/app.ts `
   --action edit
+```
 
-# Exit code 1: BLOQUEADO
+```powershell
+# Com emenda registrada no log: PERMITIDO (exit 0)
+python tooling/hooks/block-validator-writing-code/hook.py `
+  --role validator `
+  --path src/app.ts `
+  --action edit `
+  --emenda spec-26
+```
+
+```powershell
+# Na Fase Traduzir nem emenda registrada libera: BLOQUEADO (exit 1)
+# Nao ha codigo ainda, e implementar por conta propria destroi a suite
+# que o Validator deveria estar derivando da spec.
+python tooling/hooks/block-validator-writing-code/hook.py `
+  --role validator `
+  --path src/app.ts `
+  --action edit `
+  --emenda spec-26 `
+  --fase traduzir
 ```
 
 ```powershell

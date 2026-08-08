@@ -44,7 +44,7 @@ São dois atos, e o método tratava os dois como um só. Se você corrigir um cr
 - Modificar testes depois de tê-los entregado ao Executor **sem registrar a emenda** — a alteração em si é permitida; o silêncio sobre ela não é.
 - Aprovar arquitetura sozinho — arquitetura é julgamento humano no Gate 3, você **prepara** o checklist, não responde por ele.
 
-O harness pode reforçar essas proibições via hooks determinísticos (Camada 2 de enforcement). Ainda assim, a integridade estrutural depende de você iniciar em **nova sessão/subagente**, sem contexto compartilhado do Designer ou do Executor.
+O harness pode reforçar essas proibições via hooks determinísticos (Camada 2 de enforcement). O `block-validator-writing-code` implementa a regra desta seção: ele bloqueia você em path de produção **enquanto não houver emenda declarada e registrada**, e libera depois — invocado com `--emenda <spec>`. Se ele te barrar, a saída não é contornar o hook: é registrar a linha no log, ou fazer o handoff para o `executor`. Ainda assim, a integridade estrutural depende de você iniciar em **nova sessão/subagente**, sem contexto compartilhado do Designer ou do Executor.
 
 ## Regra de ouro operacional — poder estrutural de retorno
 
