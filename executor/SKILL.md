@@ -226,6 +226,85 @@ Ao final, informe ao usuário literalmente:
 >
 > **Fase Implementar concluída. Seu trabalho aqui termina.** O Validador vai rodar a suite automatizada, executar o plano manual coletando evidência, preparar o checklist arquitetural, e apresentar ao humano no Gate 3."
 
+Em seguida, cumpra o **Protocolo de passagem** (seção própria, abaixo): registre a
+passagem em `.sle/passagens/[nome-da-tarefa]-implementar.md` e feche sua última
+mensagem com este prompt, num bloco de código, pronto para colar.
+
+````text
+/validator
+
+Repositório: [caminho absoluto da raiz]
+Tarefa: [nome-da-tarefa]
+Fase: Homologar — rodar a suíte contra o código produzido e preparar o Gate 3.
+
+Estado entregue: [n] testes automatizados passando. [Se houver:] [m] passos de
+validação manual auto-verificados em ambiente de dev — o que não substitui a
+execução com evidência, que é sua.
+
+Código produzido em:
+- [caminho/arquivo] — [criado | modificado]
+- [...]
+
+[Só se houve refactor não-semântico em teste:]
+Refactor não-semântico aplicado em [arquivo(s)]: [descrição curta]. Mesma
+asserção, mesmo comportamento verificado, mesma cobertura por tag; número de
+testes idêntico antes e depois. Re-inspecione.
+
+Leia:
+- tests/[nome-da-tarefa]/ — a suíte, escrita por você mesmo na Fase Traduzir.
+- docs/specs/[nome-da-tarefa].md — o contrato contra o qual a evidência vale.
+
+NÃO abra:
+- docs/plans/[nome-da-tarefa].md — o Validador nunca vê o plano.
+- docs/specs/[nome-da-tarefa]-prototipo/, se existir — o protótipo é da Fase
+  Traduzir; carregá-lo aqui contamina a independência da Homologar.
+
+Rode a suíte ANTES de inspecionar qualquer código: ler a implementação primeiro
+contamina a leitura do resultado.
+
+Esta sessão não tem histórico anterior, e isso é deliberado.
+````
+
+---
+
+## Protocolo de passagem
+
+Todo handoff desta skill produz **duas coisas**, nesta ordem, e nenhuma é opcional.
+
+**1. O registro.** Um arquivo em `.sle/passagens/[nome-da-tarefa]-implementar.md`
+— ou `.echo/passagens/...` no alias legado, seguindo o que o repositório já usa —,
+criando o diretório se não existir. Ele carrega: data, fase concluída, papel de
+origem, papel de destino, artefatos que o destino recebe, artefatos que o destino
+**não** pode receber, e o prompt do item 2, íntegro.
+
+O seu registro carrega ainda duas coisas que ninguém mais consegue reconstruir
+depois: a **lista completa dos paths** que você tocou, e **todo refactor
+não-semântico** que aplicou em teste, com justificativa. Sem isso, a Fase
+Homologar não tem como distinguir mudança legítima de semântica alterada em voo —
+e a distinção é o que sustenta a terceira invariante.
+
+**2. O prompt.** Um bloco de código, ao final da sua última mensagem, pronto para
+colar numa sessão nova do CLI sem nenhuma edição.
+
+**Por que os dois, e não só o prompt.** O prompt vive numa mensagem de chat, e
+chat se perde — rolagem, sessão fechada, semana seguinte. Quem retomar precisa
+achar a passagem no repositório, versionada ao lado da spec.
+
+**Três regras do prompt. Violar qualquer uma quebra o handoff:**
+
+- **Autossuficiente.** Ele é lido por uma sessão que não viu nada desta. Nada de
+  "o código que acabei de escrever". Todo caminho é completo a partir da raiz.
+- **Abre invocando a skill de destino** — `/validator` —, porque é isso que
+  carrega o papel na sessão nova.
+- **Nomeia o que o destino não pode abrir**, com arquivo e motivo.
+
+**Não descreva no prompt o que o código faz por dentro.** O Validador homologa
+contra a spec, não contra a sua explicação; um resumo da implementação no prompt
+é exatamente a contaminação que a separação de papéis evita. Diga **onde** está o
+código, não **como** ele resolve.
+
+**Não cole o prompt nesta sessão e não execute o que ele pede.**
+
 ---
 
 ## Lembrete final

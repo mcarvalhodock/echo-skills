@@ -163,6 +163,39 @@ Ao final do modo evento-driven, informe ao usuário:
 >
 > Registro completo no log da spec. Meu trabalho aqui termina — a aplicação da mudança, se houver, é feita por outros papéis."
 
+Em seguida, cumpra o **Protocolo de passagem** (seção própria, no fim desta
+skill): registre em `.sle/passagens/[nome-da-tarefa]-observar-[data].md` e feche
+sua última mensagem com o prompt correspondente ao desfecho.
+
+**Se A3 foi emitida** — a passagem é para o Designer, e ela **só vale se o humano
+aceitar a proposta**. Emita o prompt marcado como tal: quem decide não é você.
+
+````text
+/designer
+
+Repositório: [caminho absoluto da raiz]
+Entrada: proposta de reconciliação A3, aceita pelo humano em [data].
+
+Spec a reconciliar: docs/specs/[nome-da-tarefa].md
+Proposta A3, íntegra: docs/specs/[nome-da-tarefa]-log.md, entrada de [data]
+Observação que a originou (A1) e classificação (A2): mesmo arquivo, mesma entrada.
+
+O que a realidade contradisse: [uma frase — o critério ou a suposição da spec que
+o mundo desmentiu, e o que foi observado no lugar].
+
+Sua tarefa: aplicar a reconciliação na spec, passando pelo gate de
+falsificabilidade como qualquer critério novo, e seguir daí para a Fase Desenhar.
+Se a hipótese inteira caiu, isso é spec nova, não emenda — e você decide qual dos
+dois é o caso.
+
+Esta sessão não tem histórico anterior, e isso é deliberado.
+````
+
+**Se A3 não foi emitida** (bug de código puro), não há passagem para o Designer.
+Registre a passagem assim mesmo, dizendo que o destino é decisão humana — abrir
+ciclo novo ou mandar para backlog —, e não emita prompt. Prompt para uma decisão
+que ninguém tomou empurra a decisão, e o seu papel é observar, não decidir.
+
 ---
 
 ## FLUXO CADÊNCIA-DRIVEN
@@ -244,6 +277,73 @@ Ao final do modo cadência-driven, informe ao usuário:
 > - Ajuste do manifesto do repositório (`.sle/manifesto.md`)
 >
 > Nenhuma dessas ações é minha — apenas a agregação e a recomendação são."
+
+Cumpra o **Protocolo de passagem**: registre em
+`.sle/passagens/retrospectiva-[período].md`, com o A4 e as recomendações.
+
+**O prompt aqui é condicional, e a condição é o humano.** Emita um bloco apenas
+para as recomendações que ele **aceitou** — uma por bloco, porque cada uma vai
+para uma sessão diferente. Se ele não decidiu nada ainda, o registro fica e o
+prompt não sai: recomendação não é ordem, e emitir prompt para todas transforma
+uma leitura de padrão numa fila de trabalho que ninguém pediu.
+
+````text
+/designer
+
+Repositório: [caminho absoluto da raiz]
+Entrada: padrão A4 da retrospectiva de [período], aceito pelo humano em [data].
+
+O padrão: [uma frase — o que se repetiu, em quantos ciclos, e onde].
+Registro íntegro: .sle/passagens/retrospectiva-[período].md
+Log global acumulado: .sle/pressao-metodo.md
+
+Sua tarefa: [a mudança concreta aceita — ajuste de template de spec, de cláusula
+recorrente, ou do que o padrão apontou]. Trate como demanda nova e passe pelo
+gate de falsificabilidade normalmente.
+
+Esta sessão não tem histórico anterior, e isso é deliberado.
+````
+
+Para recomendação que **não** é de spec — catálogo de domínios, convenção do
+método, manifesto do repositório —, o destino não é uma skill do ciclo: é edição
+direta no arquivo apontado, feita pelo humano. Registre e diga qual arquivo. Não
+invente prompt para caber num molde que não serve.
+
+---
+
+## Protocolo de passagem
+
+Todo handoff desta skill produz **duas coisas**, nesta ordem, e nenhuma é opcional.
+
+**1. O registro.** Um arquivo em `.sle/passagens/[nome]-[momento].md` — ou
+`.echo/passagens/...` no alias legado, seguindo o que o repositório já usa —,
+criando o diretório se não existir. Ele carrega: data, modo (evento ou cadência),
+papel de destino, o que o destino recebe, e o prompt do item 2, íntegro, quando
+houver.
+
+**2. O prompt**, quando houver destino de verdade. Um bloco de código, ao final
+da sua última mensagem, pronto para colar numa sessão nova do CLI sem edição.
+
+**Você é o único papel do ciclo em que o prompt é condicional.** Designer,
+Validador e Executor terminam apontando para o próximo elo, sempre. Você termina
+apontando para uma **decisão humana** — aceitar A3, aceitar um padrão do A4 — e a
+passagem só existe se a decisão veio. Emitir prompt antes disso é decidir pelo
+humano usando a aparência de um artefato de processo, que é a forma mais discreta
+de violar o próprio papel.
+
+**Três regras do prompt. Violar qualquer uma quebra o handoff:**
+
+- **Autossuficiente.** Ele é lido por uma sessão que não viu nada desta. Todo
+  caminho de arquivo é completo a partir da raiz do repositório, e a observação
+  que originou tudo aparece nele por extenso — não como referência a "o que
+  discutimos".
+- **Abre invocando a skill de destino** — em geral `/designer` —, porque é isso
+  que carrega o papel na sessão nova.
+- **Diz o que a realidade contradisse**, não o que você acha que deveria mudar. O
+  Designer decide se é emenda ou hipótese nova; você entrega a evidência.
+
+**Não cole o prompt nesta sessão e não execute o que ele pede.** Aplicar a
+mudança é do `designer`, e essa fronteira é a razão de você existir separado.
 
 ---
 

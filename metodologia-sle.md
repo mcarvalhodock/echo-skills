@@ -91,6 +91,8 @@ O que a skill `designer` conduz nesta fase (só existe em N2 e N3):
 
 **Handoff estrutural:** Fase D termina explicitando qual skill vem depois (`validator`), em qual sessão nova ela precisa rodar, e quais artefatos são passados como input (spec + contrato + protótipo se N3).
 
+**Protocolo de passagem:** todo handoff — em qualquer fase, por qualquer papel — produz dois artefatos, e nenhum é opcional. Um **registro** em `.sle/passagens/<nome>-<fase>.md`, versionado ao lado da spec, com data, origem, destino, o que o destino recebe e o que ele não pode receber. E um **prompt** pronto para colar numa sessão nova do CLI, autossuficiente, abrindo pela invocação da skill de destino e nomeando os arquivos proibidos com o motivo. O prompt sozinho não basta: chat se perde, e o registro é o que torna a passagem auditável na semana seguinte. O registro sozinho também não basta: ele documenta a passagem, e é o prompt que a executa.
+
 **Sinal de alerta:** designer tentando escrever código de produção "só um pouquinho" para testar. Isso é violação da invariante 1 — o hook bloqueia; se não bloquear, o CI pega no PR.
 
 ---
@@ -220,6 +222,7 @@ A ferramenta muda. O contrato entre intenção, execução e verificação, não
 - [ ] O TDD declarado no manifesto foi respeitado (ortodoxo/parcial/manual)?
 - [ ] Se TDD é parcial/manual, existe plano de validação manual estruturado?
 - [ ] Cada handoff entre skills é estrutural (nova sessão, artefatos explícitos)?
+- [ ] Cada handoff deixou registro em `.sle/passagens/` e prompt pronto para colar?
 - [ ] O Executor não alterou semântica de teste sem retorno para Validator?
 - [ ] A homologação rodou a suíte real e executou o plano manual, com evidência?
 - [ ] A revisão arquitetural foi respondida de verdade, não marcada como "ok"?

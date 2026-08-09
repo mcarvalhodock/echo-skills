@@ -315,7 +315,75 @@ Informe ao usuário, literalmente:
 >
 > Essa restrição é enforcement estrutural da segunda invariante do SLE (**Validador nunca vê o plano**), e permite que as cláusulas arquiteturais viradas testes de contrato pelo Validador sejam derivadas apenas da spec, sem contaminação pelo plano."
 
+Em seguida, cumpra o **Protocolo de passagem** (seção própria, abaixo): registre a
+passagem em `.sle/passagens/[nome-da-tarefa]-desenhar.md` e feche sua última
+mensagem com este prompt, num bloco de código, pronto para colar.
+
+````text
+/validator
+
+Repositório: [caminho absoluto da raiz]
+Tarefa: [nome-da-tarefa]
+Fase: Traduzir — escrever a suíte de testes que falha, antes de existir código.
+
+Leia, nesta ordem:
+- docs/specs/[nome-da-tarefa].md — o contrato, e sua única fonte de verdade.
+- .sle/manifesto.md — domínios ativos e nível de TDD deste repositório.
+[Só se N3 com protótipo preservado:]
+- docs/specs/[nome-da-tarefa]-prototipo/ — exclusivamente para escrever os testes
+  de fidelidade (Camada 3), a partir da seção "Artefatos de fidelidade" da spec.
+  Não carregue este diretório para a Fase Homologar.
+
+NÃO abra:
+- docs/plans/[nome-da-tarefa].md — o plano é contrato do Executor. A segunda
+  invariante do SLE é que o Validador nunca o vê, para que os testes de contrato
+  sejam derivados da spec, e não da implementação pretendida.
+
+Esta sessão não tem histórico anterior, e isso é deliberado.
+````
+
+Se a tarefa for **Nível 1**, o mesmo prompt vale sem as linhas de protótipo e sem
+a linha do plano — N1 não tem plano. Não deixe no texto uma proibição que aponta
+para arquivo inexistente: proibição que não corresponde a nada ensina a ignorar
+as que correspondem.
+
 **Seu trabalho aqui termina.** O ciclo continua com `validator`, mas essa não é sua responsabilidade.
+
+---
+
+## Protocolo de passagem
+
+Todo handoff desta skill produz **duas coisas**, nesta ordem, e nenhuma é opcional.
+
+**1. O registro.** Um arquivo em `.sle/passagens/[nome-da-tarefa]-[fase].md` — ou
+`.echo/passagens/...` no alias legado, seguindo o que o repositório já usa —,
+criando o diretório se não existir. Ele carrega: data, fase concluída, papel de
+origem, papel de destino, artefatos que o destino recebe, artefatos que o destino
+**não** pode receber, e o prompt do item 2, íntegro.
+
+**2. O prompt.** Um bloco de código, ao final da sua última mensagem, pronto para
+colar numa sessão nova do CLI sem nenhuma edição.
+
+**Por que os dois, e não só o prompt.** O prompt vive numa mensagem de chat, e
+chat se perde — rolagem, sessão fechada, semana seguinte. Quem retomar o trabalho
+precisa achar a passagem no repositório, versionada ao lado da spec. É o registro
+que torna o ciclo auditável depois do fato, e é ele que responde "por que o
+Validador não recebeu o plano?" sem depender da memória de ninguém.
+
+**Três regras do prompt. Violar qualquer uma quebra o handoff:**
+
+- **Autossuficiente.** Ele é lido por uma sessão que não viu nada desta. Nada de
+  "o plano que acabamos de aprovar", "conforme discutido", "a mesma spec". Todo
+  caminho de arquivo é completo a partir da raiz do repositório.
+- **Abre invocando a skill de destino** — `/validator`, `/executor`, `/designer`,
+  `/observer` —, porque é isso que carrega o papel na sessão nova. Prompt que só
+  descreve a tarefa produz um agente sem papel, que é exatamente o que o método
+  existe para evitar.
+- **Nomeia o que o destino não pode abrir**, com arquivo e motivo. Proibição que
+  não nomeia o arquivo não é cumprível, e as invariantes dependem dela.
+
+**Não cole o prompt nesta sessão e não execute o que ele pede.** Ele é para outra
+sessão; segui-lo aqui é a fusão de papéis que o handoff existe para impedir.
 
 ---
 

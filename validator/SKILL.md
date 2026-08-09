@@ -279,6 +279,42 @@ Ao final da Fase Traduzir, informe ao usuário literalmente:
 >
 > **Nota sobre a Fase Homologar:** ao ser reinvocado, você não deve carregar o contexto do protótipo. A Homologar opera sobre suite + código do Executor + spec — nada mais. Isso preserva sua independência estrutural."
 
+Em seguida, cumpra o **Protocolo de passagem** (seção própria, no fim desta
+skill): registre a passagem em `.sle/passagens/[nome-da-tarefa]-traduzir.md` e
+feche sua última mensagem com este prompt, num bloco de código, pronto para colar.
+
+````text
+/executor
+
+Repositório: [caminho absoluto da raiz]
+Tarefa: [nome-da-tarefa]
+Fase: Implementar — fazer a suíte passar, sem alterar a semântica de nenhum teste.
+
+Estado atual: [n] testes automatizados, todos falhando por ausência de
+implementação. [Se houver:] [m] passos de validação manual declarados.
+
+Leia:
+- docs/specs/[nome-da-tarefa].md — o contrato.
+- docs/plans/[nome-da-tarefa].md — o plano, que é o seu contrato de execução.
+- tests/[nome-da-tarefa]/ — a suíte falhando.
+  [Se existir:] tests/[nome-da-tarefa]/manual-validation.md — o que será
+  verificado à mão na Homologar. Cobertura declarada em passo manual é sua
+  também: implemente o comportamento e auto-verifique no seu ambiente de dev.
+- .sle/manifesto.md — padrão de Clean Code e nível de TDD do repositório.
+[Só se N3 com protótipo preservado:]
+- docs/specs/[nome-da-tarefa]-prototipo/ — referência de fidelidade
+  NÃO-COPIÁVEL. Leia para saber o que preservar; escreva o código do zero.
+
+NÃO faça:
+- alterar a semântica de qualquer teste — nem "só o nome", nem "só a asserção
+  que está errada". Teste que parece errado vira sinal para o humano, não edição.
+- copiar código do protótipo, nem importar de docs/specs/*-prototipo/** em
+  código de produção.
+- homologar o próprio trabalho: a Fase Homologar é de outro papel, noutra sessão.
+
+Esta sessão não tem histórico anterior, e isso é deliberado.
+````
+
 **Fase Traduzir concluída. Seu trabalho volta quando o Executor entregar o artefato.**
 
 ---
@@ -414,6 +450,86 @@ Depois, informe:
 > "Fase Homologar concluída. Ciclo desta tarefa pronto para **Fase Observar** — que é conduzida por outra skill (`observer`) em modo evento-driven quando surgir sinal (bug em produção, incidente, teste flaky), ou em modo cadência-driven em rotina (semanal/mensal).
 >
 > A revisão arquitetural humana ficou registrada. Se algum item apontou dívida técnica ou reserva, cabe ao humano decidir se vira input para o próximo ciclo de spec, se vira ticket, ou se fica em backlog."
+
+Cumpra o **Protocolo de passagem**: registre em
+`.sle/passagens/[nome-da-tarefa]-homologar.md` e feche com o prompt
+correspondente ao desfecho.
+
+**Se o Gate 3 aprovou** — a passagem é para a Fase Observar, e ela não tem
+data. Emita o prompt assim mesmo, dizendo que ele é para **guardar até haver
+sinal**: bug em produção, incidente, teste flaky, ou a retrospectiva do período.
+Prompt escrito no dia em que o contexto ainda existe é melhor que prompt escrito
+no dia do incidente.
+
+````text
+/observer
+
+Repositório: [caminho absoluto da raiz]
+Modo: evento-driven
+Sinal: [descreva o que aconteceu — erro, incidente, teste flaky, bug reportado]
+
+Contexto do ciclo já concluído:
+- docs/specs/[nome-da-tarefa].md — homologada em [data].
+- tests/[nome-da-tarefa]/ — a suíte que a atesta.
+- .sle/passagens/[nome-da-tarefa]-homologar.md — o que ficou registrado no
+  fechamento, incluindo dívidas e reservas levantadas no Gate 3.
+- .sle/pressao-metodo.md — emendas e aprendizados sistêmicos acumulados.
+
+Sua tarefa: registrar A1, classificar A2 e decidir se cabe A3 (proposta de
+reconciliação da spec). A5 é humano e não sai daqui.
+
+Esta sessão não tem histórico anterior, e isso é deliberado.
+````
+
+**Se o Gate 3 não aprovou**, o destino muda e o prompt também:
+
+- **O desenho inteiro se mostrou errado** → prompt para `/designer`, nomeando
+  `docs/specs/[nome-da-tarefa].md`, a evidência que derrubou a hipótese, e qual
+  critério ela contradiz. Não mande para o Executor: ele fez o que o plano pediu.
+- **Cabe emenda** → não há passagem. Emenda acontece nesta sessão, com registro
+  em `.sle/pressao-metodo.md`. Emitir prompt aqui seria reiniciar um ciclo que
+  não precisa reiniciar.
+
+---
+
+## Protocolo de passagem
+
+Todo handoff desta skill produz **duas coisas**, nesta ordem, e nenhuma é opcional.
+
+**1. O registro.** Um arquivo em `.sle/passagens/[nome-da-tarefa]-[fase].md` — ou
+`.echo/passagens/...` no alias legado, seguindo o que o repositório já usa —,
+criando o diretório se não existir. Ele carrega: data, fase concluída, papel de
+origem, papel de destino, artefatos que o destino recebe, artefatos que o destino
+**não** pode receber, e o prompt do item 2, íntegro.
+
+Na sua Fase Traduzir, o registro carrega também o **estado da suíte** no momento
+da passagem: quantos testes, todos falhando, e quantos passos manuais. É o número
+contra o qual o Executor vai medir o próprio progresso, e é a primeira coisa que
+alguém confere quando a Homologar diverge.
+
+**2. O prompt.** Um bloco de código, ao final da sua última mensagem, pronto para
+colar numa sessão nova do CLI sem nenhuma edição.
+
+**Por que os dois, e não só o prompt.** O prompt vive numa mensagem de chat, e
+chat se perde — rolagem, sessão fechada, semana seguinte. Quem retomar precisa
+achar a passagem no repositório, versionada ao lado da spec. É o registro que
+torna o ciclo auditável depois do fato.
+
+**Três regras do prompt. Violar qualquer uma quebra o handoff:**
+
+- **Autossuficiente.** Ele é lido por uma sessão que não viu nada desta. Nada de
+  "a suíte que acabamos de escrever" ou "conforme discutido". Todo caminho de
+  arquivo é completo a partir da raiz do repositório.
+- **Abre invocando a skill de destino** — `/executor`, `/designer`, `/observer`
+  —, porque é isso que carrega o papel na sessão nova.
+- **Nomeia o que o destino não pode abrir**, com arquivo e motivo.
+
+**Cuidado específico do seu papel:** o prompt que você escreve para o Executor
+menciona `docs/plans/[nome-da-tarefa].md` como leitura obrigatória dele. Escrever
+o caminho não é lê-lo, e continua valendo que **você nunca abre esse arquivo**. Se
+precisar do nome exato, derive do nome da tarefa — não do conteúdo do plano.
+
+**Não cole o prompt nesta sessão e não execute o que ele pede.**
 
 ---
 
