@@ -1,8 +1,14 @@
-# Template de Especificação — Fases Definir e Desenhar do SLE
+# Template de Especificação — Fase Definir do SLE
 
-> Este template é usado pela skill [`designer`](./designer/SKILL.md), que conduz as Fases Definir e Desenhar do método SLE (Spec Loop Engineering). Serve tanto pra uso manual (copiar e preencher) quanto como referência de como a skill conduz a conversa.
+> Este template é usado pela skill [`specifier`](./specifier/SKILL.md), que conduz a Fase Definir do método SLE. A Fase Desenhar — contrato arquitetural do desenho, plano e protótipo N3 — é da skill [`designer`](./designer/SKILL.md) e tem molde próprio dentro dela. Este arquivo serve tanto pra uso manual (copiar e preencher) quanto como referência de como a skill conduz a conversa.
 
-Regra de escala: **o tamanho da spec acompanha o risco da tarefa, não a vontade de ir rápido.** Por isso são 3 níveis. Escolha um antes de começar — a escolha em si já é uma decisão consciente, não um atalho.
+Regra de escala: **o tamanho da spec acompanha o risco da tarefa, não a vontade de ir rápido.** São 4 níveis, e o nível se **deriva** de três perguntas objetivas (abaixo) em vez de ser escolhido. Isso é deliberado: enquanto o nível dependia de julgamento, a resposta segura era sempre escalar — declarar barato e errar é visível, declarar caro sem precisar é invisível —, e o nível micro morreu de desuso.
+
+Regra de entrada (**N0, conserto**): a tarefa dispensa spec quando as três valem — a régua é um comando com exit code escrevível **antes** do conserto; nada persiste de novo (sem migração, campo ou decisão de authz); nenhum contrato público muda (rota, schema, permissão). Falhou uma, sobe para N1.
+
+Regra de roteamento a-priori: **um item que seria verdadeiro numa spec que ainda não foi escrita não pertence a esta spec.** Regra decidível a priori e válida para o projeto inteiro é convenção com régua permanente, não critério — escrita como critério, ela é re-litigada a cada spec e a régua dela morre junto com a fatia.
+
+Regra de forma: **um critério é uma frase falsificável e o nome da régua.** Sem parágrafo de justificativa. Se o porquê importa, ele é decisão, e decisão mora em `.sle/pressao-metodo.md` — não no meio do contrato. O código (`A4`) é chave de junção para a máquina ligar spec ↔ teste ↔ passagem; as palavras ao lado dele são o que você fala.
 
 Regra de fechamento: **nenhuma spec é considerada pronta com decisão técnica pendurada** — nem no meio do texto, nem como observação depois dela. Se, ao preencher, surgir uma decisão que depende de você (qual datasource, onde salvar, qual porta), resolva na hora e escreva a resposta no campo — nunca deixe como pergunta solta pro final.
 
@@ -33,16 +39,16 @@ Fora de escopo:
 ### Contexto
 [Por que isso é necessário agora — 1-2 frases. Se não souber, é sinal de que a Fase Definir ainda não terminou.]
 
-### Critérios de aceite (comportamento — BDD-flavored)
-- [ ] Dado [X], quando [Y], então [Z]
-- [ ] ...
+### Critérios de aceite
+- [ ] A1 · [uma frase falsificável] → [nome da régua]
+- [ ] A2 · ...
 
-(cada um precisa passar o gate de falsificabilidade — se não dá pra falsificar concretamente, está vago demais)
+(cada um passa o gate de falsificabilidade; nenhum carrega parágrafo de justificativa)
 
 ### Contrato arquitetural
-[Cláusulas explícitas sobre decisões estruturais que precisam ser respeitadas pela implementação: dependências obrigatórias, patterns exigidos, formatos de dados, interfaces expostas. Cada cláusula precisa ser falsificável — se não pode virar teste de contrato, é intenção comportamental disfarçada e deve ir na seção de critérios de aceite.]
-- [ ]
-- [ ]
+[Decisões estruturais que a implementação precisa respeitar: dependência obrigatória, pattern exigido, formato de dado, interface exposta. Uma cláusula por linha, falsificável, sem prosa — é rede de junção entre spec, teste e módulo, e rede não precisa de justificativa embutida. Cláusula que não pode virar teste de contrato é intenção comportamental disfarçada e vai para os critérios.]
+- [ ] C1 · [cláusula falsificável]
+- [ ] C2 · ...
 
 Se a tarefa não tem cláusulas arquiteturais explícitas (comum em N2), declare literalmente ("Sem cláusulas arquiteturais explícitas") em vez de omitir a seção.
 
@@ -192,4 +198,4 @@ Leitura: majoritariamente miolo, com dois aspectos delegáveis (segurança da po
 
 ---
 
-*Este template alimenta as Fases Definir e Desenhar do [método SLE](./metodologia-sle.md). Depois de especificado e desenhado, o próximo passo é a skill [`validator`](./validator/SKILL.md), que traduz a spec em testes (Fase Traduzir) antes de qualquer código ser escrito.*
+*Este template alimenta a Fase Definir do [método SLE](./metodologia-sle.md), conduzida pela skill [`specifier`](./specifier/SKILL.md). Depois do gate humano sobre o contrato, o próximo papel é [`designer`](./designer/SKILL.md) (Fase Desenhar) em N2/N3, ou [`validator`](./validator/SKILL.md) direto em N1 — e a partir daí o ciclo pode correr numa sessão só.*

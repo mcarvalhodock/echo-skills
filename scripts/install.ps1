@@ -92,7 +92,7 @@ function Show-Help {
     Write-Host "    .\install.ps1 -Components <list> [options]       (non-interactive)"
     Write-Host ""
     Write-Host "COMPONENTS:"
-    Write-Host "    skills   Copy the 4 skills (designer, validator, executor, observer)"
+    Write-Host "    skills   Copy the 5 skills (specifier, designer, validator, executor, observer)"
     Write-Host "    ci       Copy workflows + CI scripts to the target repository"
     Write-Host "    hooks    Copy in-session hooks to the target repository"
     Write-Host "    all      skills + ci + hooks"
@@ -134,7 +134,7 @@ function Read-InteractiveComponents {
     Write-Host ""
     Write-Host "SLE Installer - interactive mode"
     Write-Host "Choose what to install:"
-    Write-Host "  1) skills only (the 4 SLE skills)"
+    Write-Host "  1) skills only (the 5 SLE skills)"
     Write-Host "  2) skills + CI (recommended for first repository)"
     Write-Host "  3) skills + CI + hooks (full setup)"
     Write-Host "  4) ci only"
@@ -224,6 +224,7 @@ function Find-SourceRoot {
     $current = (Resolve-Path $candidate).Path
 
     $requiredMarkers = @(
+        'specifier\SKILL.md',
         'designer\SKILL.md',
         'validator\SKILL.md',
         'executor\SKILL.md',
@@ -317,7 +318,7 @@ function Install-Skills {
     $destination = Get-SkillsDestination -Ctx $Ctx
     Write-Step "installing skills to: $destination (scope=$($Ctx.Scope))" 'info'
 
-    $skills = @('designer', 'validator', 'executor', 'observer')
+    $skills = @('specifier', 'designer', 'validator', 'executor', 'observer')
     foreach ($skill in $skills) {
         $ok = Copy-SkillFolder -SkillName $skill -SourceDir $Script:SOURCE_ROOT `
             -DestRoot $destination -Ctx $Ctx

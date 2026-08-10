@@ -57,14 +57,14 @@ class TestDryRun:
 
 
 class TestExecucaoRealSkillsLocal:
-    def test_instala_as_quatro_skills(self, fake_target: Path) -> None:
+    def test_instala_as_cinco_skills(self, fake_target: Path) -> None:
         result = run_ps1([
             "-Components", "skills",
             "-Scope", "local",
             "-TargetRepo", str(fake_target),
         ])
         assert result.returncode == 0
-        for skill in ("designer", "validator", "executor", "observer"):
+        for skill in ("specifier", "designer", "validator", "executor", "observer"):
             skill_dir = fake_target / ".claude" / "skills" / skill
             assert skill_dir.is_dir(), f"skill {skill} não foi instalada"
             assert (skill_dir / "SKILL.md").is_file(), (

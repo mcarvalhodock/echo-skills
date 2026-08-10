@@ -20,34 +20,37 @@ Disciplina pessoal para desenvolvimento assistido por IA que combina **Spec-Driv
 
 Tese completa em [`propostas/spec-loop-engineering.md`](./propostas/spec-loop-engineering.md). Guia de migração ECHO → SLE em [`docs/migracao-echo-sle.md`](./docs/migracao-echo-sle.md).
 
-## As 4 invariantes
+## As 5 invariantes
 
-O SLE inteiro se apoia em quatro regras que **não são aspiracionais** — elas são verificadas por hooks e por CI:
+O SLE inteiro se apoia em regras que **não são aspiracionais** — elas são verificadas por hooks e por CI:
 
-1. **Designer ≠ Executor.** Quem desenha (spec, contrato arquitetural, protótipo) não escreve código de produção.
-2. **Executor ≠ Validator.** Quem implementa não escreve os testes que validam a própria implementação.
-3. **Nenhum agente é árbitro.** Decisões arquiteturais, disciplinares e de trade-off ficam com o humano em pontos explícitos ("gates").
+1. **Quem desenha não implementa.** `specifier` e `designer` não escrevem código de produção.
+2. **Quem escreve não emite o veredito que chega ao humano (v6).** Escrever e atestar são atos distintos. O parecer de fim de fase vem de leitura limpa sobre os artefatos, nunca da parte que os produziu.
+3. **Nenhum agente é árbitro.** Decisões arquiteturais, disciplinares e de trade-off ficam com o humano em gates explícitos. A ferramenta calcula **prontidão**; nunca **aceitação**.
 4. **Observer é independente.** Quem observa e propõe reconciliações não é quem executou o que está sendo observado.
+5. **O contrato precede a construção (v6).** A spec é escrita antes da sessão que constrói, por um papel que ainda não sabe como vai implementar.
 
-## O ciclo (6 fases, 4 skills)
+## O ciclo (6 fases, 5 skills)
 
 ```
-Definir  ──┐
-           ├─→ Designer   (spec + contrato arquitetural + protótipo N3)
-Desenhar ──┘
+Definir     ─→ Specifier  (o contrato falsificável)      ── fronteira dura ──┐
+                                                                             │
+Desenhar    ─→ Designer   (contrato arquitetural, plano, protótipo N3)      ─┤
+                                                                             │
+Traduzir  ──┐                                                                │ mesma
+            ├─→ Validator (réguas + esqueleto / homologação)                ─┤ sessão
+Homologar ──┘                                                                │
+                                                                             │
+Implementar ─→ Executor   (código de produção + régua de descoberta)        ─┘
 
-Traduzir ──┐
-           ├─→ Validator  (testes BDD + contrato + fidelidade / plano manual)
-Homologar ─┘
-
-Implementar ─→ Executor   (código de produção fiel à spec e aos testes)
-
-Observar    ─→ Observer   (sinais, drift, propostas de reconciliação)
+Observar    ─→ Observer   (sinais, drift, reconciliação)  ── sessão nova ────
 ```
+
+**A fronteira depois de Definir é a única dura (v6).** O contrato precisa ser escrito fora do contexto que já sabe como implementar — um critério derivado de dentro dele se molda ao que é fácil de construir, e nenhum veredito posterior detecta isso. O resto do ciclo pode correr numa sessão só: o que preserva a independência não é a troca de sessão, é o **veredito de leitura limpa** ao fim de cada fase.
 
 Regra de ouro:
 
-> Nenhuma linha de código antes de existir contrato; nenhum teste antes de existir spec traduzível; nenhuma implementação antes de existir teste ou plano manual aprovado; nenhuma tarefa "pronta" sem verificação real e revisão humana.
+> Nenhuma linha de código antes de existir contrato; nenhuma implementação antes de existir régua ou plano manual aprovado; nenhuma tarefa "pronta" sem verificação real e sem veredito de leitura limpa.
 
 Guia completo em [`metodologia-sle.md`](./metodologia-sle.md).
 
@@ -63,8 +66,9 @@ Guia completo em [`metodologia-sle.md`](./metodologia-sle.md).
 │   ├── manifesto.md                # domínios ativos + tdd-aplicavel + paths de produção
 │   └── pressao-metodo.md           # log de pressão sistêmica sobre o método
 ├── .echo/                          # legado (v1) — manifesto redireciona para .sle/
-├── designer/SKILL.md               # Fases D+D (Definir + Desenhar)
-├── validator/SKILL.md              # Fases T+H (Traduzir testes + Homologar)
+├── specifier/SKILL.md              # Fase D (Definir) — o contrato
+├── designer/SKILL.md               # Fase D (Desenhar) — contrato arquitetural, plano, protótipo
+├── validator/SKILL.md              # Fases T+H (Traduzir réguas + Homologar)
 ├── executor/SKILL.md               # Fase I (Implementar)
 ├── observer/SKILL.md               # Fase O (Observar)
 ├── tooling/

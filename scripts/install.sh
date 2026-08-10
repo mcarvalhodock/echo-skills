@@ -71,7 +71,7 @@ USAGE:
     ./install.sh --components <list> [options]       (non-interactive)
 
 COMPONENTS:
-    skills   Copy the 4 skills (designer, validator, executor, observer)
+    skills   Copy the 5 skills (specifier, designer, validator, executor, observer)
     ci       Copy workflows + CI scripts to the target repository
     hooks    Copy in-session hooks to the target repository
     all      skills + ci + hooks
@@ -121,7 +121,7 @@ read_interactive_components() {
     echo ""
     echo "SLE Installer - interactive mode"
     echo "Choose what to install:"
-    echo "  1) skills only (the 4 SLE skills)"
+    echo "  1) skills only (the 5 SLE skills)"
     echo "  2) skills + CI (recommended for first repository)"
     echo "  3) skills + CI + hooks (full setup)"
     echo "  4) ci only"
@@ -262,6 +262,7 @@ find_source_root() {
     local current="$candidate"
 
     local required_markers=(
+        'specifier/SKILL.md'
         'designer/SKILL.md'
         'validator/SKILL.md'
         'executor/SKILL.md'
@@ -351,7 +352,7 @@ install_skills() {
     destination=$(get_skills_destination)
     write_step info "installing skills to: $destination (scope=$ARG_SCOPE)"
 
-    local skills=(designer validator executor observer)
+    local skills=(specifier designer validator executor observer)
     for skill in "${skills[@]}"; do
         if ! copy_skill_folder "$skill" "$SOURCE_ROOT" "$destination"; then
             write_step error "failed to install skill '$skill' - aborting skills phase"

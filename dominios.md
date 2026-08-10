@@ -127,4 +127,4 @@ Estas são apostas conscientes, registradas para serem confirmadas ou derrubadas
 
 ---
 
-*Alimenta as Fases Definir e Desenhar do [método SLE](./metodologia-sle.md). Marcação e decisão de fatiar são ambas responsabilidade da skill `designer`.*
+*Alimenta as Fases Definir e Desenhar do [método SLE](./metodologia-sle.md). A **marcação** de cada item por domínio é da skill `specifier` (Fase Definir); a **decisão de fatiar** a partir dela é da skill `designer` (Fase Desenhar).*
