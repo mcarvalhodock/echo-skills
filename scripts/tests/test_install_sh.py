@@ -37,19 +37,19 @@ class TestDryRun:
         ])
         assert result.returncode == 0
         assert "[dry-run]" in result.stdout
-        assert "designer" in result.stdout
+        assert "especificar" in result.stdout
         assert not fake_target.exists()
 
 
 class TestExecucaoRealSkillsLocal:
-    def test_instala_as_cinco_skills(self, fake_target: Path) -> None:
+    def test_instala_as_quatro_skills(self, fake_target: Path) -> None:
         result = run_sh([
             "--components", "skills",
             "--scope", "local",
             "--target-repo", str(fake_target),
         ])
         assert result.returncode == 0
-        for skill in ("specifier", "designer", "validator", "executor", "observer"):
+        for skill in ("especificar", "codificar", "verificar", "homologar"):
             skill_dir = fake_target / ".claude" / "skills" / skill
             assert skill_dir.is_dir()
             assert (skill_dir / "SKILL.md").is_file()
@@ -83,25 +83,10 @@ class TestCiInstall:
             assert "continue-on-error: true" in content
 
 
-class TestHooksInstall:
-    def test_gitignore_nao_duplica_entrada_existente(
-        self, fake_target: Path
-    ) -> None:
-        gitignore = fake_target / ".gitignore"
-        fake_target.mkdir(parents=True)
-        gitignore.write_text(".sle/.active-role\n", encoding="utf-8")
-
-        result = run_sh([
-            "--components", "hooks",
-            "--target-repo", str(fake_target),
-        ])
-        assert result.returncode == 0
-        occurrences = gitignore.read_text(encoding="utf-8").count(".sle/.active-role")
-        assert occurrences == 1
-
+class TestSetupGuide:
     def test_setup_guide_gerado(self, fake_target: Path) -> None:
         result = run_sh([
-            "--components", "hooks",
+            "--components", "ci",
             "--target-repo", str(fake_target),
         ])
         assert result.returncode == 0
@@ -110,3 +95,4 @@ class TestHooksInstall:
         content = setup.read_text(encoding="utf-8")
         assert "{{" not in content
         assert str(fake_target) in content
+        assert "especificar" in content

@@ -9,7 +9,7 @@
 #
 #     bash (this)                       PowerShell (install.ps1)
 #     --------------                    -------------------------
-#     --components skills|ci|hooks|all  -Components skills|ci|hooks|all
+#     --components skills|ci|all        -Components skills|ci|all
 #     --scope global|local              -Scope global|local
 #     --target-repo <path>              -TargetRepo <path>
 #     --force                           -Force
@@ -71,16 +71,15 @@ USAGE:
     ./install.sh --components <list> [options]       (non-interactive)
 
 COMPONENTS:
-    skills   Copy the 5 skills (specifier, designer, validator, executor, observer)
+    skills   Copy the 4 skills (especificar, codificar, verificar, homologar)
     ci       Copy workflows + CI scripts to the target repository
-    hooks    Copy in-session hooks to the target repository
-    all      skills + ci + hooks
+    all      skills + ci
 
 OPTIONS:
-    --components <list>    Comma-separated list: skills,ci,hooks,all
+    --components <list>    Comma-separated list: skills,ci,all
     --scope <value>        Skills scope: global (default, ~/.claude/skills/)
                            or local (<target>/.claude/skills/)
-    --target-repo <path>   Target repository for CI/hooks (default: CWD)
+    --target-repo <path>   Target repository for CI (default: CWD)
     --force                Overwrite existing artifacts without asking
     --dry-run              Simulate without touching disk
     --help                 Show this help
@@ -123,17 +122,15 @@ read_interactive_components() {
     echo "Choose what to install:"
     echo "  1) skills only (the 5 SLE skills)"
     echo "  2) skills + CI (recommended for first repository)"
-    echo "  3) skills + CI + hooks (full setup)"
+    echo "  3) skills + CI (full setup)"
     echo "  4) ci only"
-    echo "  5) hooks only"
     read -r -p "Your choice [3]: " choice
     choice="${choice:-3}"
     case "$choice" in
         1) ARG_COMPONENTS=(skills) ;;
         2) ARG_COMPONENTS=(skills ci) ;;
-        3) ARG_COMPONENTS=(skills ci hooks) ;;
+        3) ARG_COMPONENTS=(skills ci) ;;
         4) ARG_COMPONENTS=(ci) ;;
-        5) ARG_COMPONENTS=(hooks) ;;
         *)
             write_step error "Invalid choice: '$choice'"
             exit 2
@@ -162,7 +159,7 @@ read_interactive_target_repo() {
     echo ""
     local default_target
     default_target=$(pwd)
-    read -r -p "Target repository for CI/hooks [$default_target]: " answer
+    read -r -p "Target repository for CI [$default_target]: " answer
     ARG_TARGET_REPO="${answer:-$default_target}"
 }
 
@@ -226,7 +223,7 @@ resolve_arguments() {
         local needs_target='false'
         for c in "${ARG_COMPONENTS[@]}"; do
             [[ "$c" == 'skills' ]] && needs_scope='true'
-            [[ "$c" == 'ci' || "$c" == 'hooks' ]] && needs_target='true'
+            [[ "$c" == 'ci' ]] && needs_target='true'
         done
         if [[ "$needs_scope" == 'true' ]]; then
             read_interactive_scope
@@ -240,10 +237,10 @@ resolve_arguments() {
         local expanded=()
         for c in "${ARG_COMPONENTS[@]}"; do
             if [[ "$c" == 'all' ]]; then
-                expanded+=(skills ci hooks)
+                expanded+=(skills ci)
             else
                 case "$c" in
-                    skills|ci|hooks) expanded+=("$c") ;;
+                    skills|ci) expanded+=("$c") ;;
                     *)
                         write_step error "Invalid component: '$c'"
                         exit 2
@@ -262,12 +259,10 @@ find_source_root() {
     local current="$candidate"
 
     local required_markers=(
-        'specifier/SKILL.md'
-        'designer/SKILL.md'
-        'validator/SKILL.md'
-        'executor/SKILL.md'
-        'observer/SKILL.md'
-        'tooling/hooks'
+        'especificar/SKILL.md'
+        'codificar/SKILL.md'
+        'verificar/SKILL.md'
+        'homologar/SKILL.md'
         'tooling/ci'
     )
 
@@ -352,7 +347,7 @@ install_skills() {
     destination=$(get_skills_destination)
     write_step info "installing skills to: $destination (scope=$ARG_SCOPE)"
 
-    local skills=(specifier designer validator executor observer)
+    local skills=(especificar codificar verificar homologar)
     for skill in "${skills[@]}"; do
         if ! copy_skill_folder "$skill" "$SOURCE_ROOT" "$destination"; then
             write_step error "failed to install skill '$skill' - aborting skills phase"
@@ -545,16 +540,6 @@ add_gitignore_entry() {
     ARTIFACTS_CREATED+=("$gitignore_path")
 }
 
-install_hooks() {
-    local source_hooks="$SOURCE_ROOT/tooling/hooks"
-    local target_hooks="$ARG_TARGET_REPO/tooling/hooks"
-
-    write_step info "installing hooks to: $target_hooks"
-    copy_directory_tree "$source_hooks" "$target_hooks"
-
-    add_gitignore_entry '.sle/.active-role'
-}
-
 generate_setup_guide() {
     local template_path="$SOURCE_ROOT/scripts/templates/sle-setup.md.template"
     local dest_path="$ARG_TARGET_REPO/SLE-SETUP.md"
@@ -574,14 +559,9 @@ generate_setup_guide() {
         return 0
     fi
 
-    local install_date components hooks_installed ci_installed artifacts_list
+    local install_date components ci_installed artifacts_list
     install_date=$(date '+%Y-%m-%d %H:%M:%S %z')
     components="${ARG_COMPONENTS[*]}"
-    if _contains hooks "${ARG_COMPONENTS[@]}"; then
-        hooks_installed='yes'
-    else
-        hooks_installed='no'
-    fi
     if _contains ci "${ARG_COMPONENTS[@]}"; then
         ci_installed='yes'
     else
@@ -601,7 +581,6 @@ generate_setup_guide() {
     template="${template//\{\{INSTALL_DATE\}\}/$install_date}"
     template="${template//\{\{TARGET_REPO\}\}/$ARG_TARGET_REPO}"
     template="${template//\{\{COMPONENTS\}\}/$components}"
-    template="${template//\{\{HOOKS_INSTALLED\}\}/$hooks_installed}"
     template="${template//\{\{CI_INSTALLED\}\}/$ci_installed}"
     template="${template//\{\{ARTIFACTS_LIST\}\}/$artifacts_list}"
     template="${template//\{\{UNINSTALL_LIST\}\}/$artifacts_list}"
@@ -618,7 +597,7 @@ write_summary() {
     if _contains skills "${ARG_COMPONENTS[@]}"; then
         echo "Skills scope: $ARG_SCOPE"
     fi
-    if _contains ci "${ARG_COMPONENTS[@]}" || _contains hooks "${ARG_COMPONENTS[@]}"; then
+    if _contains ci "${ARG_COMPONENTS[@]}"; then
         echo "Target repo: $ARG_TARGET_REPO"
     fi
     if [[ "$ARG_DRY_RUN" == 'true' ]]; then
@@ -631,16 +610,12 @@ write_summary() {
     echo "Next steps:"
     local step=1
 
-    if _contains ci "${ARG_COMPONENTS[@]}" || _contains hooks "${ARG_COMPONENTS[@]}"; then
+    if _contains ci "${ARG_COMPONENTS[@]}"; then
         echo "  $step. Review $ARG_TARGET_REPO/.sle/manifesto.md - replace <preencher: ...> placeholders."
         step=$((step + 1))
     fi
-    if _contains hooks "${ARG_COMPONENTS[@]}"; then
-        echo "  $step. Read $ARG_TARGET_REPO/SLE-SETUP.md for harness integration instructions."
-        step=$((step + 1))
-        echo "  $step. Set the active role at session start: echo designer > .sle/.active-role"
-        step=$((step + 1))
-    fi
+    echo "  $step. Start a demand with: /especificar"
+    step=$((step + 1))
     if _contains ci "${ARG_COMPONENTS[@]}"; then
         echo "  $step. Run 'pytest tooling/' in the target repo to confirm CI scripts pass."
         step=$((step + 1))
@@ -678,9 +653,9 @@ main() {
         PYTHON_AVAILABLE='true'
     else
         PYTHON_AVAILABLE='false'
-        if _contains ci "${ARG_COMPONENTS[@]}" || _contains hooks "${ARG_COMPONENTS[@]}"; then
-            write_step warn "Python 3.11+ not found in PATH - 'ci' and 'hooks' components need it."
-            write_step warn "Skills will proceed normally; ci/hooks will be disabled."
+        if _contains ci "${ARG_COMPONENTS[@]}"; then
+            write_step warn "Python 3.11+ not found in PATH - the 'ci' component needs it."
+            write_step warn "Skills will proceed normally; ci will be disabled."
         fi
     fi
 
@@ -690,8 +665,9 @@ main() {
     if _contains ci "${ARG_COMPONENTS[@]}" && [[ "$PYTHON_AVAILABLE" == 'true' ]]; then
         install_ci
     fi
-    if _contains hooks "${ARG_COMPONENTS[@]}" && [[ "$PYTHON_AVAILABLE" == 'true' ]]; then
-        install_hooks
+    # O guia de setup nasce sempre que algo foi para o repositório alvo: é ele que explica
+    # o ciclo das quatro skills e o que ainda precisa da mão do humano no manifesto.
+    if _contains ci "${ARG_COMPONENTS[@]}"; then
         generate_setup_guide
     fi
 

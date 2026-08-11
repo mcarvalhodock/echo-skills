@@ -1,10 +1,8 @@
 # SLE — Setup deste repositório
 
-Gerado pelo instalador em `{{INSTALL_DATE}}`.  
-Repositório destino: `{{TARGET_REPO}}`.  
+Gerado pelo instalador em `{{INSTALL_DATE}}`.
+Repositório destino: `{{TARGET_REPO}}`.
 Componentes instalados: **{{COMPONENTS}}**.
-
-Este guia lista o que foi criado, o que ainda precisa da sua ação, e como desinstalar se precisar.
 
 ## Artefatos criados
 
@@ -12,119 +10,51 @@ Este guia lista o que foi criado, o que ainda precisa da sua ação, e como desi
 
 ## Passo 1 — Revisar o manifesto
 
-Abra `{{TARGET_REPO}}/.sle/manifesto.md`. O instalador criou um esqueleto com placeholders `<preencher: ...>`. Substitua cada placeholder por conteúdo real antes de considerar o repositório operacional.
+Abra `{{TARGET_REPO}}/.sle/manifesto.md`. O instalador criou um esqueleto com placeholders `<preencher: ...>`; substitua cada um antes de considerar o repositório operacional.
 
-Prioridade alta:
-- `## Paths de produção` — sem isso, os hooks e o CI usam defaults (`src/`, `lib/`, `app/`, `internal/`, `pkg/`, `cmd/`) que podem não bater com o layout deste repositório.
-- `## tdd-aplicavel` — declare honestamente `ortodoxo` / `parcial` / `manual`. O CI e o Validator dependem disso para decidir o que exigir.
+O que mais importa:
 
-## Passo 2 — Configurar a role da sessão
+- `## Paths de produção` — sem isso o CI usa defaults (`src/`, `lib/`, `app/`, `internal/`, `pkg/`, `cmd/`) que podem não bater com o layout daqui.
+- `## Padrão de código` — é o que `codificar` segue. Sem declaração, ele usa boas práticas gerais.
 
-O SLE tem quatro skills, cada uma um papel: **designer**, **validator**, **executor**, **observer**. Os hooks in-session precisam saber qual papel está ativo para aplicar a invariante correta.
+## Passo 2 — O ciclo
 
-O caminho recomendado (Estratégia B) é o **marker-file**:
+Quatro skills, nesta ordem:
 
-- Antes de invocar uma skill, crie o arquivo `.sle/.active-role` no repositório contendo apenas o nome da skill (sem quebra de linha):
+| skill | o que faz |
+|---|---|
+| `especificar` | plano específico da demanda — no máximo 15 critérios falsificáveis |
+| `codificar` | implementa a spec e escreve os testes daquela demanda |
+| `verificar` | roda o que a demanda toca e obtém veredito de leitura limpa |
+| `homologar` | **no fim do desenvolvimento**: suíte completa e o checklist arquitetural |
 
-  ```
-  designer
-  ```
+Comece uma demanda com `/especificar`. Não há papel ativo para configurar, nem marker-file, nem hook de sessão: a separação que importa — quem escreve não atesta — é comprada pela leitura limpa dentro de `verificar`, e ela não precisa de infraestrutura.
 
-- Os hooks leem esse arquivo para saber a role.
-- O instalador já adicionou `.sle/.active-role` ao `.gitignore` — o marker-file é local, não versionado.
-- Ao final da sessão, apague o arquivo (ou deixe para a próxima invocação sobrescrever).
+**`homologar` não roda por demanda.** Cada demanda fecha em `verificar`; a suíte completa roda uma vez, ao fim do ciclo.
 
-Alternativa por variável de ambiente:
+## Passo 3 — Ativar CI bloqueante (opcional, depois de calibrar)
 
-```bash
-# Linux/macOS
-export SLE_ACTIVE_ROLE=designer
-```
-
-```powershell
-# Windows
-$env:SLE_ACTIVE_ROLE = "designer"
-```
-
-Os hooks preferem `--role` explícito; se ausente, leem `SLE_ACTIVE_ROLE`; se ausente, leem `.sle/.active-role`.
-
-## Passo 3 — Configurar hooks no harness (opcional)
-
-Se instalou hooks (`{{HOOKS_INSTALLED}}`), o próximo passo é ativá-los no harness que você usa.
-
-### Claude Code
-
-Adicione ao `.claude/settings.json` do repositório (formato aproximado — confirme a sintaxe da sua versão):
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python tooling/hooks/block-designer-writing-code/hook.py --role \"$(cat .sle/.active-role 2>/dev/null || echo '')\" --path \"${TOOL_INPUT_FILE_PATH}\" --action write"
-          },
-          {
-            "type": "command",
-            "command": "python tooling/hooks/block-validator-writing-code/hook.py --role \"$(cat .sle/.active-role 2>/dev/null || echo '')\" --path \"${TOOL_INPUT_FILE_PATH}\" --action write"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-### Cursor
-
-Adicione ao `.cursor/hooks.json` com evento `beforeFileWrite` chamando os mesmos comandos.
-
-### Fallback (git pre-commit)
-
-Se o harness não coopera, um `.git/hooks/pre-commit` funciona sempre — mas dispara no commit, não durante edição:
-
-```bash
-#!/usr/bin/env bash
-role="${SLE_ACTIVE_ROLE:-}"
-[ -z "$role" ] && [ -f .sle/.active-role ] && role=$(cat .sle/.active-role)
-[ -z "$role" ] && exit 0
-
-for f in $(git diff --cached --name-only --diff-filter=ACM); do
-  python tooling/hooks/block-designer-writing-code/hook.py --role "$role" --path "$f" --action write || exit 1
-  python tooling/hooks/block-validator-writing-code/hook.py --role "$role" --path "$f" --action write || exit 1
-done
-```
-
-Torne executável (`chmod +x .git/hooks/pre-commit` no Linux/macOS).
-
-## Passo 4 — Ativar CI bloqueante (opcional, depois de calibrar)
-
-Se instalou CI (`{{CI_INSTALLED}}`), os workflows em `.github/workflows/` foram copiados **em modo warning** — cada step tem `continue-on-error: true`. Isso te dá 1-2 sprints para:
+Se instalou CI (`{{CI_INSTALLED}}`), os workflows em `.github/workflows/` foram copiados **em modo warning** — cada step tem `continue-on-error: true`. Isso dá um ou dois sprints para:
 
 1. Rodar o CI em PRs reais e ver quais violações aparecem.
-2. Ajustar `## Paths de produção` no manifesto para eliminar falsos-positivos.
-3. Completar `## Testes vinculados` nas specs existentes.
-4. Adicionar marcadores `spec:AX` nos testes existentes.
+2. Ajustar `## Paths de produção` no manifesto para eliminar falso-positivo.
+3. Adicionar marcadores de critério nos testes existentes.
 
-Quando estiver confortável, remova `continue-on-error: true` de cada `.yml` para ativar bloqueio real.
+Quando estiver confortável, remova `continue-on-error: true` de cada `.yml`.
 
 ## Como desinstalar
 
-Se decidir remover o SLE deste repositório, delete manualmente:
+Delete manualmente:
 
 {{UNINSTALL_LIST}}
 
-E, se as skills foram instaladas em escopo global, delete `~/.claude/skills/designer/`, `~/.claude/skills/validator/`, `~/.claude/skills/executor/`, `~/.claude/skills/observer/`.
+E, se as skills foram instaladas em escopo global, delete `~/.claude/skills/especificar/`, `~/.claude/skills/codificar/`, `~/.claude/skills/verificar/` e `~/.claude/skills/homologar/`.
 
 ## Próximos passos
 
-- Ler [`README.md`](README.md) e [`metodologia-sle.md`](metodologia-sle.md) do repositório `echo-skills` (fonte do método).
-- Se este é um repositório com histórico ECHO, ler [`docs/migracao-echo-sle.md`](docs/migracao-echo-sle.md).
-- Antes da primeira tarefa real: rode `pytest tooling/` no repositório-fonte para confirmar que os hooks e scripts CI passam antes de ativar aqui.
+- Ler [`metodologia-sle.md`](metodologia-sle.md) do repositório `echo-skills` — uma página.
+- Antes da primeira demanda real, rode `pytest tooling/` no repositório-fonte para confirmar que os scripts de CI passam.
 
 ---
 
-*Este arquivo foi gerado automaticamente. É seguro modificar — o instalador não sobrescreve nas próximas execuções (verifica presença primeiro).*
+*Gerado automaticamente. É seguro modificar — o instalador não sobrescreve nas próximas execuções.*

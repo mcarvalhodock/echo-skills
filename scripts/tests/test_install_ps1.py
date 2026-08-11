@@ -40,7 +40,7 @@ class TestDryRun:
         assert result.returncode == 0
         assert "[dry-run]" in result.stdout
         assert "would copy" in result.stdout
-        assert "designer" in result.stdout
+        assert "especificar" in result.stdout
         assert "would generate" in result.stdout or "would write" in result.stdout
         assert not fake_target.exists()
 
@@ -52,19 +52,19 @@ class TestDryRun:
             "-DryRun",
         ])
         assert result.returncode == 0
-        assert "designer" in result.stdout
+        assert "especificar" in result.stdout
         assert "workflows" not in result.stdout
 
 
 class TestExecucaoRealSkillsLocal:
-    def test_instala_as_cinco_skills(self, fake_target: Path) -> None:
+    def test_instala_as_quatro_skills(self, fake_target: Path) -> None:
         result = run_ps1([
             "-Components", "skills",
             "-Scope", "local",
             "-TargetRepo", str(fake_target),
         ])
         assert result.returncode == 0
-        for skill in ("specifier", "designer", "validator", "executor", "observer"):
+        for skill in ("especificar", "codificar", "verificar", "homologar"):
             skill_dir = fake_target / ".claude" / "skills" / skill
             assert skill_dir.is_dir(), f"skill {skill} não foi instalada"
             assert (skill_dir / "SKILL.md").is_file(), (
@@ -143,39 +143,10 @@ class TestCiInstall:
         assert manifest.read_text(encoding="utf-8") == "# manifesto pre-existente\n"
 
 
-class TestHooksInstall:
-    def test_hooks_copiados_e_gitignore_atualizado(self, fake_target: Path) -> None:
-        result = run_ps1([
-            "-Components", "hooks",
-            "-TargetRepo", str(fake_target),
-        ])
-        assert result.returncode == 0
-
-        hooks_dir = fake_target / "tooling" / "hooks"
-        assert hooks_dir.is_dir()
-        assert (hooks_dir / "block-designer-writing-code" / "hook.py").is_file()
-
-        gitignore = fake_target / ".gitignore"
-        assert gitignore.is_file()
-        assert ".sle/.active-role" in gitignore.read_text(encoding="utf-8")
-
-    def test_gitignore_nao_duplica_entrada_existente(self, fake_target: Path) -> None:
-        gitignore = fake_target / ".gitignore"
-        fake_target.mkdir(parents=True)
-        gitignore.write_text(".sle/.active-role\n", encoding="utf-8")
-
-        result = run_ps1([
-            "-Components", "hooks",
-            "-TargetRepo", str(fake_target),
-        ])
-        assert result.returncode == 0
-        content = gitignore.read_text(encoding="utf-8")
-        occurrences = content.count(".sle/.active-role")
-        assert occurrences == 1, f"esperado 1 ocorrencia, achei {occurrences}"
-
+class TestSetupGuide:
     def test_setup_guide_gerado(self, fake_target: Path) -> None:
         result = run_ps1([
-            "-Components", "hooks",
+            "-Components", "ci",
             "-TargetRepo", str(fake_target),
         ])
         assert result.returncode == 0
@@ -183,7 +154,7 @@ class TestHooksInstall:
         assert setup.is_file()
         content = setup.read_text(encoding="utf-8")
         assert str(fake_target) in content
-        assert "hooks" in content
+        assert "especificar" in content
         assert "{{" not in content, "placeholders não substituídos"
 
 

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Installs Spec Loop Engineering (SLE) - skills, CI and hooks - into a
+    Installs Spec Loop Engineering (SLE) - skills and CI - into a
     consumer repository.
 
 .DESCRIPTION
@@ -14,7 +14,7 @@
 
         PowerShell (this)              bash (install.sh)
         ------------------             ------------------
-        -Components skills|ci|hooks|all --components skills|ci|hooks|all
+        -Components skills|ci|all --components skills|ci|all
         -Scope global|local            --scope global|local
         -TargetRepo <path>             --target-repo <path>
         -Force                         --force
@@ -33,7 +33,7 @@
 
 .EXAMPLE
     .\install.ps1 -Components all -TargetRepo C:\my\project
-    Installs everything (global skills + CI + hooks) into the given repo.
+    Installs everything (global skills + CI) into the given repo.
 
 .EXAMPLE
     .\install.ps1 -Components skills -Scope local -TargetRepo C:\my\project -DryRun
@@ -48,7 +48,7 @@
 
 [CmdletBinding()]
 param(
-    [ValidateSet('skills', 'ci', 'hooks', 'all')]
+    [ValidateSet('skills', 'ci', 'all')]
     [string[]]$Components,
 
     [ValidateSet('global', 'local')]
@@ -92,16 +92,15 @@ function Show-Help {
     Write-Host "    .\install.ps1 -Components <list> [options]       (non-interactive)"
     Write-Host ""
     Write-Host "COMPONENTS:"
-    Write-Host "    skills   Copy the 5 skills (specifier, designer, validator, executor, observer)"
+    Write-Host "    skills   Copy the 4 skills (especificar, codificar, verificar, homologar)"
     Write-Host "    ci       Copy workflows + CI scripts to the target repository"
-    Write-Host "    hooks    Copy in-session hooks to the target repository"
-    Write-Host "    all      skills + ci + hooks"
+    Write-Host "    all      skills + ci"
     Write-Host ""
     Write-Host "OPTIONS:"
-    Write-Host "    -Components <list>   One or more components: skills, ci, hooks, all"
+    Write-Host "    -Components <list>   One or more components: skills, ci, all"
     Write-Host "    -Scope <value>       Skills scope: global (default, ~/.claude/skills/)"
     Write-Host "                         or local (<target>/.claude/skills/)"
-    Write-Host "    -TargetRepo <path>   Target repository for CI/hooks (default: CWD)"
+    Write-Host "    -TargetRepo <path>   Target repository for CI (default: CWD)"
     Write-Host "    -Force               Overwrite existing artifacts without asking"
     Write-Host "    -DryRun              Simulate without touching disk"
     Write-Host "    -Help                Show this help"
@@ -136,17 +135,15 @@ function Read-InteractiveComponents {
     Write-Host "Choose what to install:"
     Write-Host "  1) skills only (the 5 SLE skills)"
     Write-Host "  2) skills + CI (recommended for first repository)"
-    Write-Host "  3) skills + CI + hooks (full setup)"
+    Write-Host "  3) skills + CI (full setup)"
     Write-Host "  4) ci only"
-    Write-Host "  5) hooks only"
     $choice = Read-Host "Your choice [3]"
     if ([string]::IsNullOrWhiteSpace($choice)) { $choice = '3' }
     switch ($choice) {
         '1' { return ,@('skills') }
         '2' { return ,@('skills', 'ci') }
-        '3' { return ,@('skills', 'ci', 'hooks') }
+        '3' { return ,@('skills', 'ci') }
         '4' { return ,@('ci') }
-        '5' { return ,@('hooks') }
         default {
             Write-Step "Invalid choice: '$choice'" 'error'
             exit 2
@@ -174,7 +171,7 @@ function Read-InteractiveScope {
 function Read-InteractiveTargetRepo {
     Write-Host ""
     $default = (Get-Location).Path
-    $answer = Read-Host "Target repository for CI/hooks [$default]"
+    $answer = Read-Host "Target repository for CI [$default]"
     if ([string]::IsNullOrWhiteSpace($answer)) { return $default }
     return $answer
 }
@@ -187,7 +184,7 @@ function Resolve-Arguments {
     if ($isInteractive) {
         $Ctx.Components = Read-InteractiveComponents
         $needsScope = 'skills' -in $Ctx.Components
-        $needsTarget = ('ci' -in $Ctx.Components) -or ('hooks' -in $Ctx.Components)
+        $needsTarget = 'ci' -in $Ctx.Components
 
         if ($needsScope) {
             $Ctx.Scope = Read-InteractiveScope
@@ -204,7 +201,7 @@ function Resolve-Arguments {
         $expanded = @()
         foreach ($c in $Components) {
             if ($c -eq 'all') {
-                $expanded += @('skills', 'ci', 'hooks')
+                $expanded += @('skills', 'ci')
             } else {
                 $expanded += $c
             }
@@ -224,12 +221,10 @@ function Find-SourceRoot {
     $current = (Resolve-Path $candidate).Path
 
     $requiredMarkers = @(
-        'specifier\SKILL.md',
-        'designer\SKILL.md',
-        'validator\SKILL.md',
-        'executor\SKILL.md',
-        'observer\SKILL.md',
-        'tooling\hooks',
+        'especificar\SKILL.md',
+        'codificar\SKILL.md',
+        'verificar\SKILL.md',
+        'homologar\SKILL.md',
         'tooling\ci'
     )
 
@@ -318,7 +313,7 @@ function Install-Skills {
     $destination = Get-SkillsDestination -Ctx $Ctx
     Write-Step "installing skills to: $destination (scope=$($Ctx.Scope))" 'info'
 
-    $skills = @('specifier', 'designer', 'validator', 'executor', 'observer')
+    $skills = @('especificar', 'codificar', 'verificar', 'homologar')
     foreach ($skill in $skills) {
         $ok = Copy-SkillFolder -SkillName $skill -SourceDir $Script:SOURCE_ROOT `
             -DestRoot $destination -Ctx $Ctx
@@ -530,18 +525,6 @@ function Add-GitignoreEntry {
     $Script:ARTIFACTS_CREATED += $gitignorePath
 }
 
-function Install-Hooks {
-    param([hashtable]$Ctx)
-
-    $sourceHooks = Join-Path $Script:SOURCE_ROOT 'tooling\hooks'
-    $targetHooks = Join-Path $Ctx.TargetRepo 'tooling\hooks'
-
-    Write-Step "installing hooks to: $targetHooks" 'info'
-    Copy-DirectoryTree -SourceDir $sourceHooks -DestDir $targetHooks -Ctx $Ctx | Out-Null
-
-    Add-GitignoreEntry -Ctx $Ctx -Entry '.sle/.active-role'
-}
-
 function New-SetupGuide {
     param([hashtable]$Ctx)
 
@@ -567,7 +550,6 @@ function New-SetupGuide {
 
     $installDate = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss zzz')
     $components = ($Ctx.Components -join ', ')
-    $hooksInstalled = if ('hooks' -in $Ctx.Components) { 'yes' } else { 'no' }
     $ciInstalled = if ('ci' -in $Ctx.Components) { 'yes' } else { 'no' }
 
     $artifactsList = ($Script:ARTIFACTS_CREATED | ForEach-Object { "- $_" }) -join "`n"
@@ -581,7 +563,6 @@ function New-SetupGuide {
         -replace '\{\{TARGET_REPO\}\}', $Ctx.TargetRepo `
         -replace '\{\{COMPONENTS\}\}', $components `
         -replace '\{\{ARTIFACTS_LIST\}\}', $artifactsList `
-        -replace '\{\{HOOKS_INSTALLED\}\}', $hooksInstalled `
         -replace '\{\{CI_INSTALLED\}\}', $ciInstalled `
         -replace '\{\{UNINSTALL_LIST\}\}', $uninstallList
 
@@ -599,7 +580,7 @@ function Write-Summary {
     if ('skills' -in $Ctx.Components) {
         Write-Host "Skills scope: $($Ctx.Scope)"
     }
-    if (('ci' -in $Ctx.Components) -or ('hooks' -in $Ctx.Components)) {
+    if ('ci' -in $Ctx.Components) {
         Write-Host "Target repo: $($Ctx.TargetRepo)"
     }
     if ($Ctx.DryRun) {
@@ -612,16 +593,12 @@ function Write-Summary {
     Write-Host "Next steps:"
     $step = 1
 
-    if (('ci' -in $Ctx.Components) -or ('hooks' -in $Ctx.Components)) {
+    if ('ci' -in $Ctx.Components) {
         Write-Host "  $step. Review $($Ctx.TargetRepo)\.sle\manifesto.md - replace <preencher: ...> placeholders."
         $step++
     }
-    if ('hooks' -in $Ctx.Components) {
-        Write-Host "  $step. Read $($Ctx.TargetRepo)\SLE-SETUP.md for harness integration instructions."
-        $step++
-        Write-Host "  $step. Set the active role at session start: echo designer > .sle/.active-role"
-        $step++
-    }
+    Write-Host "  $step. Start a demand with: /especificar"
+    $step++
     if ('ci' -in $Ctx.Components) {
         Write-Host "  $step. Run 'pytest tooling/' in the target repo to confirm CI scripts pass."
         $step++
@@ -653,9 +630,9 @@ function Invoke-Main {
     Confirm-SourceRoot
 
     $Script:PYTHON_AVAILABLE = Test-PythonAvailable
-    if (-not $Script:PYTHON_AVAILABLE -and (('ci' -in $ctx.Components) -or ('hooks' -in $ctx.Components))) {
-        Write-Step "Python 3.11+ not found in PATH - 'ci' and 'hooks' components need it." 'warn'
-        Write-Step "Skills will proceed normally; ci/hooks will be disabled." 'warn'
+    if (-not $Script:PYTHON_AVAILABLE -and ('ci' -in $ctx.Components)) {
+        Write-Step "Python 3.11+ not found in PATH - the 'ci' component needs it." 'warn'
+        Write-Step "Skills will proceed normally; ci will be disabled." 'warn'
     }
 
     if ('skills' -in $ctx.Components) {
@@ -664,8 +641,8 @@ function Invoke-Main {
     if (('ci' -in $ctx.Components) -and $Script:PYTHON_AVAILABLE) {
         Install-Ci -Ctx $ctx
     }
-    if (('hooks' -in $ctx.Components) -and $Script:PYTHON_AVAILABLE) {
-        Install-Hooks -Ctx $ctx
+    # O guia de setup nasce sempre que algo foi para o repositório alvo.
+    if ('ci' -in $ctx.Components) {
         New-SetupGuide -Ctx $ctx
     }
 

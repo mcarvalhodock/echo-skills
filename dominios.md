@@ -105,7 +105,7 @@ Regras do manifesto:
 - **Ausência de ferramental não desativa o domínio — declara uma dívida.** Um repo sem stack de observabilidade não deixa de precisar ser observável. Nesse caso, fatias do domínio produzem **recomendação** em vez de implementação, o que é honesto e ainda útil.
 - **Ferramental declarado tem retorno prático imediato:** um especialista que sabe o stack gera instrumentação real; sem saber, gera pseudocódigo genérico que ninguém aproveita.
 
-O que vive em `.sle/` (ou `.echo/` como alias legado) dentro do repositório é só o que **pertence** ao projeto: o manifesto, o log de pressão sobre o catálogo, e o log de pressão sobre o método — todos versionados por quem mantém o repo. Sub-specs geradas pelo fatiamento **não vivem ali** — são artefato de execução e nascem fora de qualquer workspace, para que a sanitização não dependa de um `.gitignore` estar correto em cada cliente. Detalhes na skill `designer` (na seção do Protocolo de fatiamento).
+O que vive em `.sle/` (ou `.echo/` como alias legado) dentro do repositório é só o que **pertence** ao projeto: o manifesto, o log de pressão sobre o catálogo, e o log de pressão sobre o método — todos versionados por quem mantém o repo. O veredito de cada demanda vive em `docs/specs/`, junto da spec que ele julga.
 
 ## Como este catálogo evolui
 
@@ -119,12 +119,12 @@ Estas são apostas conscientes, registradas para serem confirmadas ou derrubadas
 
 **`plataforma` é o domínio mais largo do catálogo.** Comporta deploy, custo, latência, escala e observabilidade. Domínio largo tende a virar o novo "outros". A fusão se sustenta enquanto o especialista for o mesmo, que é o critério deste catálogo — em quase toda empresa de TI, SRE/Plataforma atende os três eixos. **Sinal de falha:** fatias de performance aparecendo sem nenhum componente de infra (otimização algorítmica pura, complexidade de código). Se isso repetir, `performance` volta como domínio próprio.
 
-**Observabilidade está dentro de `plataforma`.** Aposta consciente. Se a Fase Observar ganhar tração real, ela se emancipa — e seria uma emancipação saudável, porque daria dono à fase mais frágil do método (agora conduzida pela skill `observer` no SLE).
+**Observabilidade está dentro de `plataforma`.** Aposta consciente. Se a observação de produção ganhar tração real, ela se emancipa.
 
-**Não existe domínio `qualidade`.** Verificação é a Fase Homologar (conduzida pelo `validator` no SLE), e TDD com testes integrados é default do método, não fatia delegável. Cada domínio verifica a própria fatia. O que se delegaria a um especialista de QA seria a *estratégia* de verificação — se essa necessidade aparecer de forma repetida no log de pressão, a decisão é revista.
+**Não existe domínio `qualidade`.** Verificação é `verificar` e `homologar`, e TDD com testes integrados é default do método, não fatia delegável. Cada domínio verifica a própria fatia. O que se delegaria a um especialista de QA seria a *estratégia* de verificação — se essa necessidade aparecer de forma repetida no log de pressão, a decisão é revista.
 
 **Bounded context de negócio está fora deste catálogo.** `pagamentos`, `cobrança`, `antifraude` são um segundo eixo, ortogonal a este: disciplina roteia *especialista*, bounded context roteia *dono*. Ele depende da estrutura de cada empresa e não se inventa no papel — por isso não está aqui.
 
 ---
 
-*Alimenta as Fases Definir e Desenhar do [método SLE](./metodologia-sle.md). A **marcação** de cada item por domínio é da skill `specifier` (Fase Definir); a **decisão de fatiar** a partir dela é da skill `designer` (Fase Desenhar).*
+*Alimenta a skill [`especificar`](./especificar/SKILL.md) do [método SLE](./metodologia-sle.md): é ela que marca cada critério por domínio.*
