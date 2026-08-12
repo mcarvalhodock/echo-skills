@@ -17,12 +17,12 @@ A fronteira entre o loop e o mundo — processo, exit code e histórico do alvo 
 
 **Guardas antes de começar**
 
-- [ ] **I5** `[plataforma]` — Working tree do alvo sujo no início do ciclo faz o driver recusar-se a começar, nomeando os arquivos sujos.
+- [ ] **I5** `[plataforma]` — Working tree do alvo sujo no início do ciclo faz o driver recusar-se a começar, nomeando os arquivos sujos. **A escrituração do próprio loop (`.sle/loop*.jsonl`) não conta como sujeira** — ela é escrita pelo loop, e contá-la o impediria de rodar duas vezes seguidas no mesmo alvo.
 - [ ] **I6** `[plataforma]` — Alvo posicionado no branch default (`main`/`master`) faz o driver recusar-se a começar.
 
 **Histórico**
 
-- [ ] **I7** `[plataforma]` — Concluída com sucesso uma invocação de `codificar`, tudo que mudou no alvo vira **um** commit, com assunto `loop(<spec>): codificar tentativa <n>` e trailer `SLE-Loop: <spec>#<n>`.
+- [ ] **I7** `[plataforma]` — Concluída com sucesso uma invocação de `codificar`, tudo que mudou no alvo **exceto a escrituração do loop** vira **um** commit, com assunto `loop(<spec>): codificar tentativa <n>` e trailer `SLE-Loop: <spec>#<n>`. O commit é da demanda; o registro é escrituração.
 - [ ] **I8** `[plataforma]` — Invocação de `codificar` que não muda arquivo nenhum não gera commit vazio.
 - [ ] **I9** `[plataforma]` — O driver nunca faz push, nunca faz amend e nunca reescreve commit existente.
 - [ ] **I10** `[plataforma]` — O SHA de `HEAD` do alvo é legível, e muda após um commit de tentativa. **Quando** capturá-lo como ref base é do laço (`D8` da `roteador-driver`): sequência não se observa daqui, e um critério assim faria esta spec depender de quem vem depois.

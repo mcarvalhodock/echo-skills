@@ -10,12 +10,24 @@ Impuro por definição: chama git de verdade.
 
 from __future__ import annotations
 
+import re
 import subprocess
 from pathlib import Path
 
 BRANCHES_DEFAULT = ("main", "master")
 
 TRAILER = "SLE-Loop"
+
+# A escrituração do próprio loop: `.sle/loop.jsonl` e os arquivados. Ela não
+# conta como sujeira nem entra nos commits de tentativa — senão o loop suja o
+# alvo ao rodar e a própria guarda impede a execução seguinte. Uma ferramenta
+# que se bloqueia na segunda vez está quebrada.
+ESCRITURACAO_DO_LOOP = ".sle/loop*.jsonl"
+
+# O mesmo conjunto que o pathspec acima, do lado do Python. Prefixo solto
+# (".sle/loop") engoliria `.sle/loop-anotacoes.md`, que é arquivo de alguém —
+# e a guarda deixaria de nomear sujeira de verdade.
+_E_ESCRITURACAO = re.compile(r"^\.sle/loop[^/]*\.jsonl$")
 
 
 def _git(alvo: Path | str, *args: str) -> str:
@@ -56,11 +68,19 @@ def branch_default(alvo: Path | str) -> str | None:
 
 
 def sujos(alvo: Path | str) -> tuple[str, ...]:
-    saida = _git(alvo, "status", "--porcelain")
+    # `--untracked-files=all` lista arquivo por arquivo; sem ele, um diretório
+    # inteiramente novo vira uma linha só e não dá para separar a escrituração
+    # do loop do que é trabalho de quem roda.
+    saida = _git(alvo, "status", "--porcelain", "--untracked-files=all")
     # As duas primeiras colunas são o status (índice e working tree); o resto,
     # depois do espaço, é o caminho. Cortar três engole a primeira letra do nome
     # quando o status ocupa as duas colunas.
-    return tuple(linha[2:].strip() for linha in saida.splitlines() if linha.strip())
+    caminhos = (linha[2:].strip() for linha in saida.splitlines() if linha.strip())
+    return tuple(
+        caminho
+        for caminho in caminhos
+        if not _E_ESCRITURACAO.match(caminho.strip('"').replace("\\", "/"))
+    )
 
 
 def impedimentos(alvo: Path | str) -> tuple[str, ...]:
@@ -86,7 +106,7 @@ def commitar_tentativa(
     alvo: Path | str, *, spec: str, tentativa: int
 ) -> str | None:
     """Recolhe tudo que a tentativa mudou num commit marcado. None se nada mudou."""
-    _git(alvo, "add", "-A")
+    _git(alvo, "add", "-A", "--", ".", f":!{ESCRITURACAO_DO_LOOP}")
     if not _git(alvo, "diff", "--cached", "--name-only"):
         return None
 

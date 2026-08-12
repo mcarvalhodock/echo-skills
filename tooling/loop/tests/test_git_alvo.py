@@ -55,6 +55,41 @@ def test_working_tree_limpo_nao_impede(alvo: Path):
     assert git_alvo.impedimentos(alvo) == ()
 
 
+def test_escrituracao_do_loop_nao_conta_como_sujeira(alvo: Path):
+    # spec:I5 — senão o loop suja o alvo ao rodar e se bloqueia na vez seguinte.
+    (alvo / ".sle").mkdir()
+    (alvo / ".sle" / "loop.jsonl").write_text('{"spec":"alfa"}\n', encoding="utf-8")
+    (alvo / ".sle" / "loop-1.jsonl").write_text('{"spec":"alfa"}\n', encoding="utf-8")
+
+    assert git_alvo.impedimentos(alvo) == ()
+
+    (alvo / ".sle" / "manifesto.md").write_text("# manifesto\n", encoding="utf-8")
+    assert any(".sle/manifesto.md" in i for i in git_alvo.impedimentos(alvo))
+
+
+def test_arquivo_de_alguem_em_sle_com_nome_parecido_ainda_e_sujeira(alvo: Path):
+    # spec:I5 — a excecao e `.sle/loop*.jsonl`, nao tudo que comeca com "loop".
+    (alvo / ".sle").mkdir()
+    (alvo / ".sle" / "loop.jsonl").write_text("{}\n", encoding="utf-8")
+    (alvo / ".sle" / "loop-anotacoes.md").write_text("minhas notas\n", encoding="utf-8")
+
+    sujos = git_alvo.sujos(alvo)
+
+    assert ".sle/loop-anotacoes.md" in sujos
+    assert ".sle/loop.jsonl" not in sujos
+
+
+def test_escrituracao_do_loop_nao_entra_no_commit_de_tentativa(alvo: Path):
+    # spec:I7 — o commit é da demanda; o registro do loop é escrituração.
+    (alvo / ".sle").mkdir()
+    (alvo / ".sle" / "loop.jsonl").write_text('{"spec":"alfa"}\n', encoding="utf-8")
+    (alvo / "novo.py").write_text("x = 1\n", encoding="utf-8")
+
+    git_alvo.commitar_tentativa(alvo, spec="alfa", tentativa=1)
+
+    assert _git(alvo, "show", "--name-only", "--format=", "HEAD").split() == ["novo.py"]
+
+
 @pytest.mark.parametrize("branch", ["main", "master"])
 def test_branch_default_impede_comecar(tmp_path: Path, branch: str):
     # spec:I6

@@ -256,6 +256,20 @@ def test_modo_seco_nao_invoca_nem_registra_nem_commita(tmp_path: Path):
     assert relato.invocacoes == 0
 
 
+def test_modo_seco_nao_registra_nem_quando_o_laco_nem_comeca(tmp_path: Path):
+    # spec:D11 — saída antes da primeira iteração pulava a única guarda de seco.
+    alvo = _alvo(tmp_path, beta=SPEC_TRAVADA.format(nome="beta"))
+    executor = ExecutorRoteirizado(alvo)
+
+    relato = driver.rodar(
+        _config(alvo, "beta", seco=True), executor=executor, agora=_agora
+    )
+
+    assert relato.final.decisao.motivo is Motivo.LOTE_VAZIO
+    assert executor.chamadas == []
+    assert not registro.caminho_do_registro(alvo).exists()
+
+
 def test_ciclo_completo_fecha_e_commita_por_tentativa(tmp_path: Path):
     # spec:D2 + D8 — o caminho feliz inteiro, com histórico marcado.
     alvo = _alvo(tmp_path, alfa=SPEC_LIVRE.format(nome="alfa", depende="Nenhuma."))

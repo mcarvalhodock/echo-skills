@@ -15,6 +15,12 @@
 #   .sle/manifesto.md         — sucessor do manifesto local (v2 do método)
 #   .sle/pressao-metodo.md    — log global de pressões sistêmicas do método
 
+# Escrituração de execução do loop — traço de máquina, não artefato do projeto.
+# O manifesto e os logs de pressão continuam versionados (ver acima); estes não:
+# são o que o loop escreveu enquanto rodava, e reescrevem a cada ciclo.
+.sle/loop.jsonl
+.sle/loop-*.jsonl
+
 # Artefatos de execução dos hooks/testes — não pertencem ao repositório.
 __pycache__/
 .pytest_cache/

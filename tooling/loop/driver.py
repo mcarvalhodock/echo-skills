@@ -91,9 +91,15 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
 
     specs = montar_specs(alvo, config.specs)
     caminho_reg = registro.caminho_do_registro(alvo)
+    if not config.seco:
+        # Ciclo anterior que chegou ao fim vira arquivo; interrompido continua
+        # aberto. É isso que impede uma spec emendada de nascer com o teto
+        # esgotado pelas tentativas de semanas atrás.
+        registro.arquivar_se_encerrado(caminho_reg)
 
     decisao = _abertura(specs)
     invocacoes = 0
+    ultima_spec = decisao.proxima_spec or ""
 
     while decisao.decisao.acao is Acao.INVOCAR:
         fase = decisao.decisao.fase
@@ -109,6 +115,7 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
             break
 
         spec = decisao.proxima_spec
+        ultima_spec = spec
         base = _base_registrada(caminho_reg, spec)
         if fase is Fase.CODIFICAR and base is None:
             base = git_alvo.head(alvo)
@@ -158,6 +165,22 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
                 teto=config.teto,
                 vereditos=(str(caminho_do_veredito(alvo, spec)),),
             )
+        )
+
+    # A decisão que encerra também vai para o registro. Sem ela o arquivo só
+    # tem invocações e não sabe dizer por que o loop parou — e é ela que a
+    # execução seguinte lê para saber se retoma ou começa ciclo novo.
+    #
+    # Sob `seco`, não. O laço pode terminar antes da primeira iteração — lote
+    # todo em quarentena, ou nada pendente — e aí a saída seca nunca é
+    # alcançada; sem esta guarda, um ensaio escreveria no alvo.
+    if not config.seco:
+        gravar(
+            caminho_reg,
+            decisao=decisao.decisao,
+            instante=carimbar(),
+            alvo=alvo,
+            spec=ultima_spec,
         )
 
     texto = (

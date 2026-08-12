@@ -19,6 +19,14 @@ _RELATIVO_AO_ALVO = Path(".sle") / "loop.jsonl"
 
 _INVOCACAO_DE_CODIFICAR = f"{Acao.INVOCAR.value}:{Fase.CODIFICAR.value}"
 
+# O laço não tem mais o que fazer sozinho depois de qualquer uma destas.
+# Qualquer outra última linha significa que ele foi cortado no meio — e aí a
+# execução seguinte é retomada, não ciclo novo.
+_TRANSICOES_TERMINAIS = (
+    Acao.ESCALAR.value,
+    f"{Acao.INVOCAR.value}:{Fase.HOMOLOGAR.value}",
+)
+
 
 def caminho_do_registro(alvo: str | Path) -> Path:
     """O registro mora no alvo, nunca onde o método está instalado."""
@@ -61,6 +69,33 @@ def linhas(caminho: str | Path) -> tuple[dict, ...]:
         for linha in origem.read_text(encoding="utf-8").splitlines()
         if linha.strip()
     )
+
+
+def ciclo_encerrado(caminho: str | Path) -> bool:
+    """O ciclo anterior chegou ao fim, ou foi cortado no meio?"""
+    gravadas = linhas(caminho)
+    if not gravadas:
+        return False
+    return gravadas[-1].get("transicao") in _TRANSICOES_TERMINAIS
+
+
+def arquivar_se_encerrado(caminho: str | Path) -> Path | None:
+    """Guarda o registro do ciclo anterior e devolve o caminho. None se retomada.
+
+    Arquivar em vez de marcar o ciclo dentro da linha: o esquema do registro é
+    fechado, e um campo novo ali valeria para sempre em troca de um problema
+    que a renomeação resolve sem tocar em nada.
+    """
+    origem = Path(caminho)
+    if not ciclo_encerrado(origem):
+        return None
+
+    numero = 1
+    while (destino := origem.with_name(f"{origem.stem}-{numero}{origem.suffix}")).exists():
+        numero += 1
+
+    origem.rename(destino)
+    return destino
 
 
 def contar_tentativas(caminho: str | Path, spec: str) -> int:
