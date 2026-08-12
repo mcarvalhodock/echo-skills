@@ -5,6 +5,8 @@ Disciplina pessoal para desenvolvimento assistido por IA: **Spec-Driven Developm
 > **Status: v3 — uma subtração.** A v2 tinha 5 skills, 6 fases, 5 invariantes, 3 hooks e 6 tipos de artefato. Ela custava mais e entregava menos: em um ciclo real, produziu passagens, logs e registros suficientes para eu declarar uma spec "verde ponta a ponta" — e um pedido de dez linhas a um contexto limpo encontrou sete critérios não atendidos. Todo documento escrito entre esses dois pontos teve valor negativo: custou tokens e deu credibilidade a uma afirmação falsa.
 >
 > A v3 corta o que não se pagou. O resultado aterrissa perto do ECHO v1 (`especificar` / `planejar` / `homologar`), guardando a única coisa que a v2 acertou de verdade: **a atestação por leitura limpa**.
+>
+> O que cresceu depois foi **fora** do método: `tooling/loop/` automatiza o encadeamento entre as fases sem acrescentar nenhuma regra a elas. As quatro skills continuam sendo quatro prompts, e o loop continua sendo dispensável — dá para rodar tudo à mão.
 
 ---
 
@@ -19,13 +21,16 @@ Disciplina pessoal para desenvolvimento assistido por IA: **Spec-Driven Developm
 
 `homologar` não roda por demanda. Cada demanda fecha em `verificar`; a suíte inteira roda uma vez, no fim — homologar cada spec contra a suíte completa é o custo que essa separação existe para evitar.
 
-Cada fase roda em **sessão limpa** e não invoca a seguinte. Quem encadeia é o roteador (`tooling/loop/`) — ou você, à mão.
+Cada fase roda em **sessão limpa** e não invoca a seguinte. Quem encadeia é o loop (`tooling/loop/`) — ou você, à mão.
 
 **Duas paradas por ciclo, e o número não cresce com o tamanho do lote:**
 
 ```
 especificar × N → ┤aprovar o lote├ → (codificar → verificar) × N → homologar → ┤checklist├
+     conversa                                    headless                headless
 ```
+
+`especificar` é **interativa** de propósito: é a fase onde falta contexto, e o agente precisa perguntar. As outras rodam headless — lá a conversa não acrescenta, porque `codificar` tem a spec como contrato e `verificar` mede contra ela.
 
 Método completo, em uma página: [`metodologia-sle.md`](./metodologia-sle.md).
 
@@ -51,9 +56,10 @@ O método não mora no codebase que ele trabalha. Instala-se uma vez e opera sob
 ├── verificar/SKILL.md
 ├── homologar/SKILL.md
 ├── .sle/manifesto.md           # domínios ativos + padrão de código + paths de produção
-├── scripts/                    # instaladores (bash e PowerShell) + testes
+├── scripts/sle, sle.ps1        # a ferramenta
+├── scripts/install.*           # instaladores (bash e PowerShell) + testes
 ├── tooling/ci/                 # enforcement de repositório (2 workflows)
-├── tooling/loop/               # o loop — roteador puro + driver ([guia](./tooling/loop/README.md))
+├── tooling/loop/               # o loop — decisão pura + driver ([guia](./tooling/loop/README.md))
 ├── propostas/                  # tese histórica (v1..v4) — leitura, não vigente
 └── docs/                       # specs, vereditos, planos e guia de migração
 ```
@@ -73,6 +79,8 @@ cp -r especificar codificar verificar homologar ~/.claude/skills/
 
 Para escopo local, copie para `.claude/skills/` na raiz do projeto. No Claude.ai, zipe cada pasta e suba em Settings → Features → Skills.
 
+O `sle` não precisa de instalação: Python 3.10+, sem dependência externa, rodando do clone. Mas ele **depende das skills instaladas**, porque cita cada uma pelo nome — e avisa quando a instalada divergir da do clone, que é erro fácil de cometer e caro de perceber.
+
 ## No dia a dia
 
 1. **Conserto?** Se a régua é um comando com exit code que você escreve antes, nada novo persiste e nenhum contrato público muda — conserte e pronto. Sem spec, sem ciclo. As três perguntas são objetivas de propósito: enquanto o ônus for "justifique por que isto é barato", a resposta segura é sempre escalar.
@@ -82,20 +90,28 @@ Para escopo local, copie para `.claude/skills/` na raiz do projeto. No Claude.ai
 5. Repita 3–4 por demanda do lote.
 6. `/homologar`, no fim — suíte inteira e o checklist que só você responde.
 
-Os passos 3 a 5 não precisam de você. É para isso que existe o loop:
+Nada disso precisa ser digitado fase a fase. É para isso que existe o `sle`:
 
 ```bash
-python tooling/loop/driver.py --alvo /caminho/do/projeto --specs cadastro,cobranca --seco
+./scripts/sle pedir --alvo /projeto              # conversa, escreve as specs, para
+                                                 # você lê e aprova
+./scripts/sle rodar --alvo /projeto --specs a,b  # headless até o checklist
 ```
 
-Ele invoca cada fase em sessão limpa, commita cada tentativa de forma marcada, e só chama você nos dois gates e nas exceções. Comece pelo `--seco`. Guia completo — instalação, flags, o que cada parada significa, como limpar o histórico depois: [`tooling/loop/README.md`](./tooling/loop/README.md).
+`pedir` lê `<alvo>/pedidos.md` — um `##` por demanda, o cabeçalho é o nome da spec — e abre uma sessão por pedido. `rodar` percorre o lote, commita cada tentativa de forma marcada, roda a suíte no fim e para no checklist. Comece pelo `--seco` nos dois.
+
+Sai com **0** em gate planejado, **não-zero** em exceção — dá para encadear sem ler a saída. Guia completo (flags, monorepo, outro agente, o que cada parada significa, como limpar o histórico): [`tooling/loop/README.md`](./tooling/loop/README.md).
+
+**Sem API key e sem SDK.** O loop fala com o CLI do agente por processo, um por fase. É isso que faz trocar de agente não mudar uma linha do roteamento.
 
 ## O que ainda falta, honestamente
 
-- **O roteador só tem o núcleo.** `roteador-lote` (lote, quarentena, dependência) está especificado e não implementado; o driver nativo não tem spec. Até lá, quem encadeia as fases é você.
-- **A v3 não rodou um ciclo inteiro ainda.** Ela nasceu do post-mortem da v2, e o teste é o próximo projeto real.
-- **`homologar` no fim do desenvolvimento pressupõe que existe um fim.** Em produto contínuo, "fim" provavelmente vira cadência — e essa cadência ainda não está definida.
+- **O loop nunca invocou um agente de verdade.** Toda a suíte roda com executor falso, de propósito — nenhum teste chama `claude` nem `agent`, porque teste que depende de LLM não é régua, é aposta. O primeiro uso real é o teste que nenhuma suíte daqui faz.
+- **A v3 não rodou um ciclo inteiro num projeto que não seja este.** Ela nasceu do post-mortem da v2, e se construiu aplicando o próprio método a si mesma; o teste é o próximo projeto real.
+- **`homologar` no fim pressupõe que existe um fim.** Em produto contínuo, "fim" provavelmente vira cadência — e essa cadência ainda não está definida.
 - **A leitura limpa custa um subagente por demanda.** É barata perto do que substituiu, mas não é grátis, e ainda não sei o piso de demanda em que ela deixa de valer.
+- **Três dívidas reconhecidas e sem spec:** o campo `evidencia` da decisão carrega sete significados diferentes; `guarda-do-alvo` cobre cinco falhas distintas que ninguém distingue programaticamente; e `criterion_coverage` mantém um conjunto **global** de identificadores, então prefixo repetido entre specs esconde lacuna alheia.
+- **`docs/specs/instaladores-sle.md` é da v2** e descreve skills que não existem mais. O CI acusa onze critérios descobertos por causa dela, e isso é honesto — a spec é que está velha.
 
 ## Licença
 
