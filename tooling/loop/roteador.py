@@ -37,6 +37,9 @@ class Motivo(Enum):
     DEFEITO_DE_SPEC = "defeito-de-spec"
     TETO_DE_TENTATIVAS = "teto-de-tentativas"
     VEREDITO_AUSENTE = "veredito-ausente"
+    # Usados só por `lote`, e declarados aqui porque o motivo pertence à decisão.
+    DEPENDENCIA_CIRCULAR = "dependencia-circular"
+    LOTE_VAZIO = "lote-vazio"
 
 
 @dataclass(frozen=True)
