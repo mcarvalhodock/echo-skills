@@ -25,7 +25,7 @@ A fronteira entre o loop e o mundo — processo, exit code e histórico do alvo 
 - [ ] **I7** `[plataforma]` — Concluída com sucesso uma invocação de `codificar`, tudo que mudou no alvo vira **um** commit, com assunto `loop(<spec>): codificar tentativa <n>` e trailer `SLE-Loop: <spec>#<n>`.
 - [ ] **I8** `[plataforma]` — Invocação de `codificar` que não muda arquivo nenhum não gera commit vazio.
 - [ ] **I9** `[plataforma]` — O driver nunca faz push, nunca faz amend e nunca reescreve commit existente.
-- [ ] **I10** `[plataforma]` — Antes da primeira invocação de `codificar` de uma spec, o SHA de `HEAD` do alvo é devolvido como ref base daquela spec.
+- [ ] **I10** `[plataforma]` — O SHA de `HEAD` do alvo é legível, e muda após um commit de tentativa. **Quando** capturá-lo como ref base é do laço (`D8` da `roteador-driver`): sequência não se observa daqui, e um critério assim faria esta spec depender de quem vem depois.
 
 ## Contrato técnico
 
