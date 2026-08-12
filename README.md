@@ -53,7 +53,7 @@ O método não mora no codebase que ele trabalha. Instala-se uma vez e opera sob
 ├── .sle/manifesto.md           # domínios ativos + padrão de código + paths de produção
 ├── scripts/                    # instaladores (bash e PowerShell) + testes
 ├── tooling/ci/                 # enforcement de repositório (2 workflows)
-├── tooling/loop/               # roteador do ciclo — núcleo puro + registro
+├── tooling/loop/               # o loop — roteador puro + driver ([guia](./tooling/loop/README.md))
 ├── propostas/                  # tese histórica (v1..v4) — leitura, não vigente
 └── docs/                       # specs, vereditos, planos e guia de migração
 ```
@@ -81,6 +81,14 @@ Para escopo local, copie para `.claude/skills/` na raiz do projeto. No Claude.ai
 4. `/verificar` — roda o que a demanda toca e abre a leitura limpa. Sem pergunta arquitetural.
 5. Repita 3–4 por demanda do lote.
 6. `/homologar`, no fim — suíte inteira e o checklist que só você responde.
+
+Os passos 3 a 5 não precisam de você. É para isso que existe o loop:
+
+```bash
+python tooling/loop/driver.py --alvo /caminho/do/projeto --specs cadastro,cobranca --seco
+```
+
+Ele invoca cada fase em sessão limpa, commita cada tentativa de forma marcada, e só chama você nos dois gates e nas exceções. Comece pelo `--seco`. Guia completo — instalação, flags, o que cada parada significa, como limpar o histórico depois: [`tooling/loop/README.md`](./tooling/loop/README.md).
 
 ## O que ainda falta, honestamente
 

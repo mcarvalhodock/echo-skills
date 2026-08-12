@@ -133,7 +133,7 @@ function Read-InteractiveComponents {
     Write-Host ""
     Write-Host "SLE Installer - interactive mode"
     Write-Host "Choose what to install:"
-    Write-Host "  1) skills only (the 5 SLE skills)"
+    Write-Host "  1) skills only (the 4 SLE skills)"
     Write-Host "  2) skills + CI (recommended for first repository)"
     Write-Host "  3) skills + CI (full setup)"
     Write-Host "  4) ci only"

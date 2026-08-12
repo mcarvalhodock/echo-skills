@@ -72,6 +72,8 @@ Lidos por `pr_spec_diff`. Aqui, "produção" é o que outros repositórios conso
 
 O loop mora **com o método**, não nos repositórios-alvo: ele recebe o alvo por parâmetro e opera sobre N codebases. O instalador não o copia para o consumidor, e isso é deliberado.
 
+Guia operacional em [`tooling/loop/README.md`](../tooling/loop/README.md).
+
 ## Nível de rigor esperado
 
 **Produção crítica.** Este repositório declara e materializa metodologia usada em outros projetos — mudanças estruturais têm efeito multiplicador. Cabe rigor de N3 mesmo em tarefas que pareceriam N2 em outros contextos.

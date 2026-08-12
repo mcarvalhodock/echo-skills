@@ -275,12 +275,45 @@ def _texto_seco(decisao: DecisaoDoLote, alvo: Path, config: Config) -> str:
 
 
 def main(argv=None) -> int:
-    analisador = argparse.ArgumentParser(description="Loop SLE — driver nativo.")
-    analisador.add_argument("--alvo", required=True)
-    analisador.add_argument("--specs", required=True)
-    analisador.add_argument("--seco", action="store_true")
-    analisador.add_argument("--fusivel", type=int, default=FUSIVEL_PADRAO)
-    analisador.add_argument("--teto", type=int, default=TETO_PADRAO)
+    analisador = argparse.ArgumentParser(
+        description=(
+            "Loop SLE — percorre um lote de specs já aprovadas, invocando cada "
+            "fase em sessão limpa. Para nos gates humanos e nas exceções."
+        ),
+        epilog=(
+            "Exemplo:\n"
+            "  python tooling/loop/driver.py --alvo ../meu-projeto "
+            "--specs cadastro,cobranca --seco\n\n"
+            "O alvo precisa estar limpo e fora do branch default."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    analisador.add_argument(
+        "--alvo", required=True, help="caminho do codebase sobre o qual rodar"
+    )
+    analisador.add_argument(
+        "--specs",
+        required=True,
+        help="nomes separados por vírgula, sem caminho e sem .md "
+        "(lidos de <alvo>/docs/specs/<nome>.md)",
+    )
+    analisador.add_argument(
+        "--seco",
+        action="store_true",
+        help="mostra a próxima decisão e para: não invoca, não registra, não commita",
+    )
+    analisador.add_argument(
+        "--fusivel",
+        type=int,
+        default=FUSIVEL_PADRAO,
+        help=f"máximo de invocações no ciclo inteiro (default: {FUSIVEL_PADRAO})",
+    )
+    analisador.add_argument(
+        "--teto",
+        type=int,
+        default=TETO_PADRAO,
+        help=f"máximo de tentativas de codificar por spec (default: {TETO_PADRAO})",
+    )
     args = analisador.parse_args(argv)
 
     config = Config(

@@ -120,7 +120,7 @@ read_interactive_components() {
     echo ""
     echo "SLE Installer - interactive mode"
     echo "Choose what to install:"
-    echo "  1) skills only (the 5 SLE skills)"
+    echo "  1) skills only (the 4 SLE skills)"
     echo "  2) skills + CI (recommended for first repository)"
     echo "  3) skills + CI (full setup)"
     echo "  4) ci only"
