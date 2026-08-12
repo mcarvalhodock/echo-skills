@@ -25,6 +25,11 @@ MARCADOR = "{prompt}"
 # seria documentar algo que não funciona.
 COMANDO_PADRAO = ("claude", "-p", MARCADOR)
 
+# `especificar` é conversa: o agente pergunta e aprofunda a demanda, e é isso
+# que faz a spec valer. Sem `-p`, o prompt semeia a primeira mensagem e o resto
+# acontece entre você e ele.
+COMANDO_INTERATIVO_PADRAO = ("claude", MARCADOR)
+
 
 @dataclass(frozen=True)
 class Resultado:
@@ -73,6 +78,17 @@ def executar_de_verdade(comando, cwd) -> tuple[int, str]:
     return concluido.returncode, (concluido.stdout or "") + (concluido.stderr or "")
 
 
+def executar_interativo(comando, cwd) -> tuple[int, str]:
+    """Sem capturar nada: o terminal é da conversa, não do driver.
+
+    Interativo aqui não é flag do agente — é o driver saindo do meio. Capturar
+    a saída roubaria o terminal de quem precisa responder às perguntas.
+    """
+    concluido = subprocess.run(list(comando), cwd=str(cwd))
+    # Nada foi lido, e a string vazia diz isso. Fingir que há saída seria pior.
+    return concluido.returncode, ""
+
+
 def invocar(
     fase: Fase,
     prompt: str,
@@ -81,8 +97,9 @@ def invocar(
     artefato_esperado: str | None = None,
     executor=None,
     template=COMANDO_PADRAO,
+    interativo: bool = False,
 ) -> Resultado:
-    executar = executor or executar_de_verdade
+    executar = executor or (executar_interativo if interativo else executar_de_verdade)
     exit_code, saida = executar(comando_de(prompt, template), Path(alvo))
 
     presente = bool(artefato_esperado) and (Path(alvo) / artefato_esperado).exists()

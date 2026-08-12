@@ -34,11 +34,15 @@ def _git(repo: Path, *args: str) -> str:
     ).stdout.strip()
 
 
-def _alvo(raiz: Path, pedidos_md: str = PEDIDOS) -> Path:
+def _alvo(raiz: Path, pedidos_md: str = PEDIDOS, *, versionar_pedidos: bool = True) -> Path:
     pasta = raiz / "alvo"
     (pasta / "docs" / "specs").mkdir(parents=True)
-    (pasta / "pedidos.md").write_text(pedidos_md, encoding="utf-8")
+    (pasta / "docs" / "specs" / ".gitkeep").write_text("", encoding="utf-8")
+    if versionar_pedidos:
+        (pasta / "pedidos.md").write_text(pedidos_md, encoding="utf-8")
     _git_init(pasta)
+    if not versionar_pedidos:
+        (pasta / "pedidos.md").write_text(pedidos_md, encoding="utf-8")
     return pasta
 
 

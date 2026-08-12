@@ -55,9 +55,14 @@ python tooling/loop/driver.py --alvo /caminho/do/projeto --specs cadastro,cobran
 | `--seco` | mostra a próxima decisão e para. Não invoca, não registra, não commita |
 | `--teto` | tentativas de `codificar` por spec antes de escalar (default: 3) |
 | `--fusivel` | invocações no ciclo inteiro antes de escalar (default: 30) |
-| `--comando` | como invocar o agente; `{prompt}` marca onde entra o texto (default: `claude -p {prompt}`) |
+| `--comando` | segmento 2, headless; `{prompt}` marca onde entra o texto (default: `claude -p {prompt}`) |
+| `--comando-interativo` | segmento 1, conversa; sem `-p` (default: `claude {prompt}`) |
 
 ### Escrever as specs também
+
+**O segmento 1 é conversa, não automação.** Cada pedido abre uma sessão interativa no seu terminal, onde o agente pergunta e aprofunda a demanda — é aí que a spec fica boa. O que o loop dá não é economia de atenção: é a fila, o commit marcado e o relatório de triagem no fim.
+
+Seis pedidos são seis conversas, uma de cada vez, com você presente. O segmento 2 continua headless.
 
 São **dois comandos, com você no meio** — e é essa a única parada obrigatória antes do código:
 

@@ -55,6 +55,7 @@ class Config:
     fusivel: int = FUSIVEL_PADRAO
     teto: int = TETO_PADRAO
     comando: tuple[str, ...] = COMANDO_PADRAO
+    comando_interativo: tuple[str, ...] = invocacao.COMANDO_INTERATIVO_PADRAO
     pedidos: str | None = None
 
 
@@ -126,9 +127,16 @@ class Contexto:
     avisos: tuple[str, ...]
 
 
-def _preparar(config: Config, executor) -> tuple[Contexto | None, Relato | None]:
-    """As guardas que valem para os dois segmentos. Uma só, para não divergirem."""
+def _preparar(
+    config: Config, executor, comando=None
+) -> tuple[Contexto | None, Relato | None]:
+    """As guardas que valem para os dois segmentos. Uma só, para não divergirem.
+
+    `comando` é o do segmento que vai rodar: o segmento 1 usa o interativo, e
+    validar o headless ali deixaria passar template interativo quebrado.
+    """
     alvo = Path(config.alvo)
+    comando = comando or config.comando
 
     def travar(*motivos: str) -> tuple[None, Relato]:
         decisao = _decisao_solta(Motivo.GUARDA_DO_ALVO, motivos)
@@ -137,14 +145,14 @@ def _preparar(config: Config, executor) -> tuple[Contexto | None, Relato | None]
     if not alvo.is_dir():
         return travar(f"alvo não existe: {alvo}")
 
-    if invocacao.marcador_ausente(config.comando):
+    if invocacao.marcador_ausente(comando):
         return travar(
-            f"comando sem o marcador {invocacao.MARCADOR}: {' '.join(config.comando)}"
+            f"comando sem o marcador {invocacao.MARCADOR}: {' '.join(comando)}"
         )
 
     # Só quando o processo vai mesmo nascer: com executor injetado, a camada de
     # processo foi substituída inteira e checar o PATH não diz nada.
-    if executor is None and (faltando := invocacao.executavel_ausente(config.comando)):
+    if executor is None and (faltando := invocacao.executavel_ausente(comando)):
         return travar(f"executável não encontrado no PATH: {faltando}")
 
     raiz_do_repo = git_alvo.raiz(alvo)
@@ -303,7 +311,7 @@ def rodar_pedidos(config: Config, *, executor, agora=None, registrar=None) -> Re
         # aprovação é o ato de rodar o segundo comando, não um campo na spec.
         return _travado(alvo, "--pedidos e --specs são exclusivos")
 
-    contexto, travado = _preparar(config, executor)
+    contexto, travado = _preparar(config, executor, config.comando_interativo)
     if travado is not None:
         return travado
     alvo, com_git = contexto.alvo, contexto.com_git
@@ -347,6 +355,8 @@ def rodar_pedidos(config: Config, *, executor, agora=None, registrar=None) -> Re
 
     caminho_reg = registro.caminho_do_registro(alvo)
     registro.arquivar_se_encerrado(caminho_reg)
+    if com_git:
+        git_alvo.commitar_pedidos(alvo)
 
     linhas: list[str] = []
     invocacoes = 0
@@ -375,7 +385,8 @@ def rodar_pedidos(config: Config, *, executor, agora=None, registrar=None) -> Re
             alvo=alvo,
             artefato_esperado=f"docs/specs/{pedido.nome}.md",
             executor=executor,
-            template=config.comando,
+            template=config.comando_interativo,
+            interativo=True,
         )
         invocacoes += 1
 
@@ -592,6 +603,12 @@ def main(argv=None) -> int:
         help=f"máximo de tentativas de codificar por spec (default: {TETO_PADRAO})",
     )
     analisador.add_argument(
+        "--comando-interativo",
+        default=" ".join(invocacao.COMANDO_INTERATIVO_PADRAO),
+        help="segmento 1: como abrir a sessão de conversa. Sem flag headless "
+        "(default: %s)" % " ".join(invocacao.COMANDO_INTERATIVO_PADRAO),
+    )
+    analisador.add_argument(
         "--comando",
         default=" ".join(COMANDO_PADRAO),
         help="como invocar o agente; %s marca onde entra o texto "
@@ -607,6 +624,7 @@ def main(argv=None) -> int:
         fusivel=args.fusivel,
         teto=args.teto,
         comando=tuple(args.comando.split()),
+        comando_interativo=tuple(args.comando_interativo.split()),
         pedidos=args.pedidos,
     )
     if not config.pedidos and not config.specs:

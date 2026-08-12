@@ -29,6 +29,11 @@ ESCRITURACAO_DO_LOOP = ".sle/loop*.jsonl"
 # e a guarda deixaria de nomear sujeira de verdade.
 _E_ESCRITURACAO = re.compile(r"^\.sle/loop[^/]*\.jsonl$")
 
+# O insumo do segmento 1. Sem esta exceção o loop se bloqueia por causa do
+# próprio arquivo de pedidos. Caminho exato, não prefixo: `pedidos-antigos.md`
+# é rascunho de alguém e continua sendo sujeira.
+ARQUIVO_DE_PEDIDOS = "pedidos.md"
+
 
 def _git(alvo: Path | str, *args: str) -> str:
     # `encoding="utf-8"`: o git fala UTF-8, e sem isto o Python decodifica com a
@@ -113,11 +118,13 @@ def sujos(alvo: Path | str) -> tuple[str, ...]:
     # depois do espaço, é o caminho. Cortar três engole a primeira letra do nome
     # quando o status ocupa as duas colunas.
     caminhos = (linha[2:].strip() for linha in saida.splitlines() if linha.strip())
-    return tuple(
-        caminho
-        for caminho in caminhos
-        if not _E_ESCRITURACAO.match(caminho.strip('"').replace("\\", "/"))
-    )
+    ignorados = []
+    for caminho in caminhos:
+        normalizado = caminho.strip('"').replace("\\", "/")
+        if _E_ESCRITURACAO.match(normalizado) or normalizado == ARQUIVO_DE_PEDIDOS:
+            continue
+        ignorados.append(caminho)
+    return tuple(ignorados)
 
 
 def impedimentos(alvo: Path | str) -> tuple[str, ...]:
@@ -157,8 +164,25 @@ def commitar_spec(alvo: Path | str, *, spec: str) -> str | None:
     )
 
 
-def _commitar(alvo: Path | str, *, assunto: str, marca: str) -> str | None:
-    escopo = ("--", ".", f":!{ESCRITURACAO_DO_LOOP}")
+def commitar_pedidos(alvo: Path | str) -> str | None:
+    """O arquivo de pedidos, sozinho e antes da fila.
+
+    Separado do commit da spec de propósito: o log passa a distinguir o que foi
+    pedido do que foi especificado, e um `git show` deste commit responde "o
+    que eu tinha pedido mesmo?" depois que a conversa mudou a spec.
+    """
+    return _commitar(
+        alvo,
+        assunto="loop(pedidos): registrar pedidos",
+        marca="pedidos#registro",
+        escopo=("--", ARQUIVO_DE_PEDIDOS),
+    )
+
+
+def _commitar(
+    alvo: Path | str, *, assunto: str, marca: str, escopo=None
+) -> str | None:
+    escopo = escopo or ("--", ".", f":!{ESCRITURACAO_DO_LOOP}")
 
     _git(alvo, "add", "-A", *escopo)
     # A verificação de vazio também é escopada: com algo já no índice fora da
