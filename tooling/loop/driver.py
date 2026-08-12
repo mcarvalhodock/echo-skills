@@ -20,10 +20,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import auditoria
+import casa
 import git_alvo
 import invocacao
 import pedidos
 import registro
+import repos
 import secoes
 import skills_instaladas
 from invocacao import COMANDO_PADRAO, invocar
@@ -495,6 +497,39 @@ def _gravar_final(gravar, caminho_reg, decisao, carimbar, alvo, spec, config) ->
         )
 
 
+def _comando_repo(args, analisador) -> int:
+    """`repo` mexe só no cadastro: nenhum alvo é tocado por causa dele."""
+    _, criada = casa.garantir()
+    if criada:
+        print(f"casa criada em {casa.caminho()}")
+
+    # Linha que não serve é nomeada, sempre. Coletá-la e não mostrar seria pior
+    # que não coletar: some em silêncio e a pessoa acha que cadastrou.
+    for linha in repos.leitura_atual().invalidos:
+        print(f"linha ignorada, fora do formato `- <apelido>: <caminho>`: {linha}")
+
+    if args.acao == "list":
+        for repo in repos.carregar():
+            estado = "" if repos.existe(repo) else "  (ausente)"
+            print(f"{repo.apelido}: {repo.caminho}{estado}")
+        return 0
+
+    try:
+        if args.acao == "add":
+            repos.gravar(
+                repos.adicionar(repos.texto_atual(), args.apelido, args.caminho)
+            )
+        elif args.acao == "rm":
+            repos.gravar(repos.remover(repos.texto_atual(), args.apelido))
+        else:
+            analisador.print_help()
+            return 2
+    except (repos.ApelidoEmUso, repos.ApelidoDesconhecido) as recusa:
+        print(str(recusa))
+        return 1
+    return 0
+
+
 def _agora_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
@@ -682,6 +717,15 @@ def main(argv=None) -> int:
         help="arquivo de pedidos, relativo ao alvo (default: pedidos.md)",
     )
 
+    repo = subcomandos.add_parser("repo", help="cadastro de repositórios")
+    acoes = repo.add_subparsers(dest="acao")
+    adicionar = acoes.add_parser("add", help="registra um repositório")
+    adicionar.add_argument("apelido")
+    adicionar.add_argument("caminho")
+    acoes.add_parser("list", help="lista os registrados")
+    remover = acoes.add_parser("rm", help="remove um registrado")
+    remover.add_argument("apelido")
+
     rodar_cmd = subcomandos.add_parser(
         "rodar", help="segmento 2: codificar/verificar por spec e homologar no fim"
     )
@@ -705,6 +749,8 @@ def main(argv=None) -> int:
     )
 
     args = analisador.parse_args(argv)
+    if args.subcomando == "repo":
+        return _comando_repo(args, repo)
     if not args.subcomando:
         analisador.print_help()
         # Sair não-zero: sem subcomando nada rodou, e um script que encadeia
@@ -712,7 +758,7 @@ def main(argv=None) -> int:
         raise SystemExit(2)
 
     config = Config(
-        alvo=Path(args.alvo),
+        alvo=repos.resolver_cadastrado(args.alvo),
         specs=tuple(n.strip() for n in getattr(args, "specs", "").split(",") if n.strip()),
         seco=args.seco,
         fusivel=getattr(args, "fusivel", FUSIVEL_PADRAO),
