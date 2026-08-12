@@ -61,10 +61,15 @@ python tooling/loop/driver.py --alvo /caminho/do/projeto --specs cadastro,cobran
 O loop não fixa executável. Para o agente do Cursor, que importa as skills do Claude e aceita `-p`:
 
 ```bash
-python tooling/loop/driver.py --alvo /caminho --specs cadastro --comando "cursor-agent -p {prompt}"
+python tooling/loop/driver.py --alvo /caminho --specs cadastro --comando "agent -p {prompt}"
 ```
 
 O `{prompt}` pode vir em qualquer posição — há agente que exige o texto antes das outras flags. Template sem o marcador, ou executável fora do PATH, é recusado **antes** da primeira invocação.
+
+Duas coisas que valem saber antes do primeiro uso:
+
+- **`agent` é um nome genérico.** Se houver outro executável com esse nome no seu PATH, o loop vai chamar o errado sem reclamar — ele só confere que existe. Na dúvida, passe o caminho completo no `--comando`.
+- **O template é dividido por espaço em branco.** `agent -p {prompt}` funciona; um argumento que precise de espaço **dentro** dele não sobrevive à divisão.
 
 ### Monorepo
 

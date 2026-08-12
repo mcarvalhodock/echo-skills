@@ -406,7 +406,7 @@ def main(argv=None) -> int:
         "--comando",
         default=" ".join(COMANDO_PADRAO),
         help="como invocar o agente; %s marca onde entra o texto "
-        "(default: %s). Ex.: 'cursor-agent -p %s'"
+        "(default: %s). Ex.: 'agent -p %s'"
         % (invocacao.MARCADOR, " ".join(COMANDO_PADRAO), invocacao.MARCADOR),
     )
     args = analisador.parse_args(argv)

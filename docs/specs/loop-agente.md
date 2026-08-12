@@ -33,7 +33,7 @@ O loop deixa de fixar o Claude Code: qualquer agente com modo headless que resol
 
 ## Contrato técnico
 
-- Template do comando como lista de argumentos com o marcador `{prompt}` num deles — ex.: `claude -p {prompt}`, `cursor-agent -p {prompt}`.
+- Template do comando como lista de argumentos com o marcador `{prompt}` num deles — ex.: `claude -p {prompt}`, `agent -p {prompt}`.
 - **Skills continuam sendo citadas por nome, não embutidas no prompt.** O agente do Cursor importa as skills do Claude e aceita `-p`, então os dois alvos resolvem skill nativamente; embutir o markdown reimplementaria no prompt o que o harness já faz, a cada invocação. A guarda do `G6` cobre o risco que embutir cobriria.
 - **Avisa, não trava.** Divergência é informação, não impedimento: travar obrigaria a reinstalar a cada linha editada numa skill, e o loop passaria a atrapalhar justamente quem está desenvolvendo o método. As guardas que travam (`branch default`, `working tree sujo`) protegem o repositório de quem roda; esta protege quem lê o resultado, e um aviso basta.
 - **Compara conteúdo, não data.** Hash do texto: data de arquivo mente depois de um `git checkout`.

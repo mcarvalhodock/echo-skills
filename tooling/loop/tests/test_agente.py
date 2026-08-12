@@ -14,7 +14,7 @@ from roteador import Acao, Fase, Motivo
 from test_alvo import _git_init, _specs_em
 from test_driver import ExecutorRoteirizado, _agora, _config
 
-CURSOR = ("cursor-agent", "-p", "{prompt}")
+CURSOR = ("agent", "-p", "{prompt}")
 PROMPT_NA_FRENTE = ("agente", "{prompt}", "--headless")
 
 
@@ -31,7 +31,7 @@ def _transicoes(alvo: Path) -> list[str]:
 
 def test_o_comando_e_configuravel(tmp_path: Path):
     # spec:G1
-    assert invocacao.comando_de("oi", CURSOR) == ("cursor-agent", "-p", "oi")
+    assert invocacao.comando_de("oi", CURSOR) == ("agent", "-p", "oi")
 
 
 def test_sem_configuracao_o_comando_e_o_claude(tmp_path: Path):
@@ -62,12 +62,12 @@ def test_template_sem_marcador_e_recusado_antes_de_invocar(tmp_path: Path):
 
 
 def test_executavel_ausente_e_detectado():
-    # spec:G5
-    assert invocacao.executavel_ausente(CURSOR + ()) in (None, "cursor-agent")
+    # spec:G5 — `git` como presente conhecido: a suíte inteira já depende dele,
+    # e `claude` pode não existir na máquina de quem roda os testes.
+    assert invocacao.executavel_ausente(("git", "-p", "{prompt}")) is None
     assert invocacao.executavel_ausente(("nao-existe-mesmo", "{prompt}")) == (
         "nao-existe-mesmo"
     )
-    assert invocacao.executavel_ausente(invocacao.COMANDO_PADRAO) is None
 
 
 def test_executavel_ausente_escala_antes_de_gerar_processo(tmp_path: Path):
@@ -206,4 +206,4 @@ def test_o_comando_configurado_chega_ao_executor(tmp_path: Path):
     driver.rodar(_config(alvo, "alfa", comando=CURSOR), executor=executor, agora=_agora)
 
     assert executados
-    assert executados[0][0] == "cursor-agent"
+    assert executados[0][0] == "agent"
