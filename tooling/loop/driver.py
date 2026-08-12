@@ -20,8 +20,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import git_alvo
+import invocacao
 import registro
-from invocacao import invocar
+import skills_instaladas
+from invocacao import COMANDO_PADRAO, invocar
 from lote import (
     DecisaoDoLote,
     EstadoDoLote,
@@ -35,6 +37,9 @@ from roteador import TETO_PADRAO, Acao, Decisao, Fase, Motivo
 
 FUSIVEL_PADRAO = 30
 
+# O clone do método é onde este arquivo mora — não é configuração.
+CLONE_DO_METODO = Path(__file__).resolve().parents[2]
+
 
 @dataclass(frozen=True)
 class Config:
@@ -43,6 +48,7 @@ class Config:
     seco: bool = False
     fusivel: int = FUSIVEL_PADRAO
     teto: int = TETO_PADRAO
+    comando: tuple[str, ...] = COMANDO_PADRAO
 
 
 @dataclass(frozen=True)
@@ -108,6 +114,21 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
         travado = _decisao_solta(Motivo.GUARDA_DO_ALVO, (f"alvo não existe: {alvo}",))
         return Relato(travado, 0, _texto_da_escalada(travado, alvo))
 
+    if invocacao.marcador_ausente(config.comando):
+        travado = _decisao_solta(
+            Motivo.GUARDA_DO_ALVO,
+            (f"comando sem o marcador {invocacao.MARCADOR}: {' '.join(config.comando)}",),
+        )
+        return Relato(travado, 0, _texto_da_escalada(travado, alvo))
+
+    # Só quando o processo vai mesmo nascer: com executor injetado, a camada de
+    # processo foi substituída inteira e checar o PATH não diz nada.
+    if executor is None and (faltando := invocacao.executavel_ausente(config.comando)):
+        travado = _decisao_solta(
+            Motivo.GUARDA_DO_ALVO, (f"executável não encontrado no PATH: {faltando}",)
+        )
+        return Relato(travado, 0, _texto_da_escalada(travado, alvo))
+
     raiz_do_repo = git_alvo.raiz(alvo)
     com_git = raiz_do_repo is not None
     escopo = git_alvo.subarvore(alvo, raiz_do_repo) if com_git else "."
@@ -124,6 +145,10 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
             "modo degradado: o alvo não é repositório git — sem commit por "
             "tentativa e sem diff na leitura limpa"
         )
+
+    # A skill que o agente resolve é a instalada, não a do clone. Já rodou um
+    # ciclo inteiro com uma versão anterior sem ninguém perceber.
+    avisos.extend(skills_instaladas.divergencias(alvo, metodo=CLONE_DO_METODO))
 
     specs = montar_specs(alvo, config.specs)
     caminho_reg = registro.caminho_do_registro(alvo)
@@ -145,7 +170,10 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
             # leria na hora em que foi gerado.
             break
         if config.seco:
-            return Relato(decisao, 0, _texto_seco(decisao, alvo, config))
+            # Com os avisos: o ensaio também é "antes de começar", e é nele que
+            # você tem chance de reinstalar a skill antes de rodar de verdade.
+            texto = "\n".join([*avisos, _texto_seco(decisao, alvo, config)])
+            return Relato(decisao, 0, texto)
         if invocacoes >= config.fusivel:
             decisao = _decisao_solta(Motivo.FUSIVEL, (f"{invocacoes} invocações",))
             break
@@ -172,6 +200,7 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
                 f"docs/specs/{spec}-veredito.md" if fase is Fase.VERIFICAR else None
             ),
             executor=executor,
+            template=config.comando,
         )
         invocacoes += 1
 
@@ -373,6 +402,13 @@ def main(argv=None) -> int:
         default=TETO_PADRAO,
         help=f"máximo de tentativas de codificar por spec (default: {TETO_PADRAO})",
     )
+    analisador.add_argument(
+        "--comando",
+        default=" ".join(COMANDO_PADRAO),
+        help="como invocar o agente; %s marca onde entra o texto "
+        "(default: %s). Ex.: 'cursor-agent -p %s'"
+        % (invocacao.MARCADOR, " ".join(COMANDO_PADRAO), invocacao.MARCADOR),
+    )
     args = analisador.parse_args(argv)
 
     config = Config(
@@ -381,6 +417,7 @@ def main(argv=None) -> int:
         seco=args.seco,
         fusivel=args.fusivel,
         teto=args.teto,
+        comando=tuple(args.comando.split()),
     )
     relato = rodar(config, executor=None)
     print(relato.texto)

@@ -11,13 +11,19 @@ Impuro por definição: chama processo.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 from roteador import Fase
 
-EXECUTAVEL = "claude"
+MARCADOR = "{prompt}"
+
+# O único comando verificado neste repositório. Outros agentes entram por
+# configuração: chutar a flag de um executável que não está instalado aqui
+# seria documentar algo que não funciona.
+COMANDO_PADRAO = ("claude", "-p", MARCADOR)
 
 
 @dataclass(frozen=True)
@@ -35,14 +41,29 @@ class Resultado:
         return self.artefato_esperado is None or self.artefato_presente
 
 
-def comando_de(prompt: str) -> tuple[str, ...]:
+def comando_de(prompt: str, template=COMANDO_PADRAO) -> tuple[str, ...]:
     """Headless, uma fase por processo, sem nenhuma retomada de sessão.
 
     Retomar sessão traria o raciocínio da fase anterior junto — que é
     exatamente o que a sessão limpa existe para cortar, e o motivo de
     retentativa também começar do zero.
+
+    A posição do prompt é declarada pelo marcador, não presumida no fim: há
+    agente que exige o texto antes das outras flags.
     """
-    return (EXECUTAVEL, "-p", prompt)
+    return tuple(arg.replace(MARCADOR, prompt) for arg in template)
+
+
+def marcador_ausente(template) -> bool:
+    """Erro de configuração deve doer antes da primeira invocação, não depois."""
+    return not any(MARCADOR in arg for arg in template)
+
+
+def executavel_ausente(template) -> str | None:
+    """O nome do executável que não está no PATH, ou None."""
+    if not template:
+        return None
+    return None if shutil.which(template[0]) else template[0]
 
 
 def executar_de_verdade(comando, cwd) -> tuple[int, str]:
@@ -59,9 +80,10 @@ def invocar(
     alvo: Path | str,
     artefato_esperado: str | None = None,
     executor=None,
+    template=COMANDO_PADRAO,
 ) -> Resultado:
     executar = executor or executar_de_verdade
-    exit_code, saida = executar(comando_de(prompt), Path(alvo))
+    exit_code, saida = executar(comando_de(prompt, template), Path(alvo))
 
     presente = bool(artefato_esperado) and (Path(alvo) / artefato_esperado).exists()
 

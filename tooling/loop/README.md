@@ -13,8 +13,10 @@ Três coisas, e o loop recusa começar sem elas:
 | requisito | por quê |
 |---|---|
 | o alvo está num **branch de trabalho**, não no default | o loop commita; `main` não é lugar para tentativa automática |
-| o **working tree está limpo** | o primeiro commit do loop varreria mudança sua junto, e ninguém separaria depois |
+| a **subárvore do alvo está limpa** | o primeiro commit do loop varreria mudança sua junto, e ninguém separaria depois |
 | as specs estão **escritas e aprovadas por você** | o loop parte de spec aprovada; ele não escreve spec |
+
+Sujeira **fora** da subárvore do alvo não impede: num monorepo você roda em `packages/api` sem depender de `packages/web` estar limpo.
 
 Spec com a seção `## Perguntas em aberto` preenchida entra em **quarentena** — não roda, e leva junto quem depende dela. As outras seguem.
 
@@ -52,6 +54,27 @@ python tooling/loop/driver.py --alvo /caminho/do/projeto --specs cadastro,cobran
 | `--seco` | mostra a próxima decisão e para. Não invoca, não registra, não commita |
 | `--teto` | tentativas de `codificar` por spec antes de escalar (default: 3) |
 | `--fusivel` | invocações no ciclo inteiro antes de escalar (default: 30) |
+| `--comando` | como invocar o agente; `{prompt}` marca onde entra o texto (default: `claude -p {prompt}`) |
+
+### Outro agente
+
+O loop não fixa executável. Para o agente do Cursor, que importa as skills do Claude e aceita `-p`:
+
+```bash
+python tooling/loop/driver.py --alvo /caminho --specs cadastro --comando "cursor-agent -p {prompt}"
+```
+
+O `{prompt}` pode vir em qualquer posição — há agente que exige o texto antes das outras flags. Template sem o marcador, ou executável fora do PATH, é recusado **antes** da primeira invocação.
+
+### Monorepo
+
+Aponte o `--alvo` para o pacote, não para a raiz. O loop resolve a subárvore sozinho e escopa nela a guarda, o commit e o diff que a leitura limpa recebe. `docs/specs/` e `.sle/` ficam dentro do pacote, e dois pacotes irmãos não se enxergam.
+
+### Alvo sem git
+
+Roda em **modo degradado**, avisando uma vez: sem commit por tentativa e sem diff. A leitura limpa passa a julgar o estado atual em vez do que mudou.
+
+Isso ainda responde ao critério — critério é asserção sobre o fim, não sobre o que mudou. Mas você perde a diferença entre *"isto é verdade"* e *"isto passou a ser verdade"*: critério satisfeito por código anterior à demanda é lido como atendido.
 
 **Comece sempre pelo `--seco`.** Ele confirma que as specs foram lidas, que o grafo de dependência fecha e que a primeira decisão é a que você espera:
 
@@ -97,11 +120,23 @@ O motivo vem impresso. Ele é a primeira coisa a ler:
 
 **A escalada nunca transcreve o veredito.** Ela dá o caminho do arquivo, e você lê lá. Repassado, o parecer amacia sem má intenção — e é por isso que ele vai para arquivo em primeiro lugar.
 
+### Aviso que não trava
+
+Se alguma das quatro skills instaladas divergir da do clone, o loop **avisa e segue**:
+
+```
+skill `codificar` instalada difere da do clone (C:\Users\voce\.claude\skills\codificar\SKILL.md)
+```
+
+A comparação é por conteúdo, não por data — data mente depois de um `git checkout`. Escopo local (`<alvo>/.claude/skills/`) tem precedência sobre o global, porque é ele que o agente usa. Não trava porque travar obrigaria a reinstalar a cada linha editada numa skill; mas se você viu esse aviso, o que rodou não foi o que está no clone.
+
 ## O que ele escreve no alvo
 
 **`<alvo>/.sle/loop.jsonl`** — uma linha por decisão, append-only, campos fixos: instante, alvo, spec, transição, motivo, evidência, tentativa. Sem campo de texto livre, de propósito: um aqui reabriria a passagem que o método pagou caro para matar, e dessa vez ninguém estaria lendo.
 
 É desse arquivo que sai a contagem de tentativas — não da memória do processo. Interromper o loop com `Ctrl+C` e rodar de novo **não repete tentativa já contada**.
+
+**Um registro por ciclo.** Quando a execução anterior terminou (escalada ou lote encerrado), a próxima arquiva o registro em `loop-1.jsonl`, `loop-2.jsonl`, … e começa limpo. Quando foi interrompida no meio, continua no mesmo arquivo. É isso que impede uma spec emendada de nascer com o teto já esgotado pelas tentativas de semanas atrás.
 
 **Um commit por tentativa de `codificar`**, com formato fixo:
 
