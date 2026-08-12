@@ -125,7 +125,8 @@ def test_homologar_conta_no_fusivel(tmp_path: Path):
 
     relato = driver.rodar(_config(alvo, "alfa"), executor=executor, agora=_agora)
 
-    assert relato.invocacoes == 3  # codificar, verificar, homologar
+    # codificar, verificar, a auditoria da única spec, homologar
+    assert relato.invocacoes == 4
 
 
 def test_modo_seco_nao_invoca_homologar(tmp_path: Path):

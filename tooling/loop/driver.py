@@ -19,6 +19,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
+import auditoria
 import git_alvo
 import invocacao
 import pedidos
@@ -210,6 +211,7 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
     ultima_spec = decisao.proxima_spec or ""
 
     saida_da_homologacao = ""
+    auditado = False
 
     while decisao.decisao.acao is Acao.INVOCAR:
         fase = decisao.decisao.fase
@@ -225,6 +227,19 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
         # `homologar` fecha o ciclo e não tem spec própria: os insumos dela são
         # o conjunto do ciclo e a base do começo dele, não da última demanda.
         fecha_o_ciclo = fase is Fase.HOMOLOGAR
+
+        if fecha_o_ciclo and not auditado:
+            # Antes do checklist, e não depois: pergunta de arquitetura sobre
+            # código com critério regredido é pergunta prematura.
+            regredidas, invocacoes = _auditar(
+                alvo, escopo, config, executor, invocacoes
+            )
+            auditado = True
+            if regredidas:
+                decisao = _decisao_solta(
+                    Motivo.REGRESSAO_DE_CRITERIO, tuple(sorted(regredidas))
+                )
+                break
         spec = ", ".join(decisao.fechadas) if fecha_o_ciclo else decisao.proxima_spec
         if not fecha_o_ciclo:
             ultima_spec = spec
@@ -532,6 +547,30 @@ def _com_base(decisao: Decisao, fase: Fase, base, ja_registrada) -> Decisao:
     return decisao
 
 
+def _auditar(alvo: Path, escopo: str, config: Config, executor, invocacoes: int):
+    """Relê os critérios de todas as specs do alvo. Devolve as que regrediram.
+
+    Uma invocação por spec, e cada uma conta no fusível: o custo é real e
+    cresce com o alvo, e é o preço de não acreditar em veredito velho.
+    """
+    regredidas: list[str] = []
+
+    for nome in auditoria.auditaveis(alvo):
+        invocar(
+            Fase.VERIFICAR,  # é leitura limpa; não há fase nova aqui
+            auditoria.prompt_de(alvo, nome, escopo=escopo),
+            alvo=alvo,
+            artefato_esperado=f"docs/specs/{nome}-auditoria.md",
+            executor=executor,
+            template=config.comando,
+        )
+        invocacoes += 1
+        if auditoria.regressoes(alvo, nome):
+            regredidas.append(nome)
+
+    return regredidas, invocacoes
+
+
 def _base_do_ciclo(caminho_reg) -> str | None:
     """A base da PRIMEIRA spec do ciclo — a última já teria commits em cima."""
     for linha in registro.linhas(caminho_reg):
@@ -560,6 +599,10 @@ def _texto_da_escalada(decisao: DecisaoDoLote, alvo: Path) -> str:
         f"spec: {decisao.proxima_spec or '—'}",
         f"evidência: {', '.join(d.evidencia) if d.evidencia else '—'}",
     ]
+    if d.motivo is Motivo.REGRESSAO_DE_CRITERIO:
+        # A evidência aqui são nomes de spec, e cada uma tem sua auditoria.
+        for nome in d.evidencia:
+            linhas.append(f"auditoria em: {auditoria.caminho_da_auditoria(alvo, nome)}")
     if decisao.proxima_spec:
         # Caminhos, nunca conteúdo: o veredito audita a sessão que o pediu, e
         # transcrevê-lo aqui é a forma de amaciá-lo sem má intenção.

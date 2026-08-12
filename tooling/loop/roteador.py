@@ -46,6 +46,9 @@ class Motivo(Enum):
     FUSIVEL = "fusivel"
     FALHA_DE_INVOCACAO = "falha-de-invocacao"
     GUARDA_DO_ALVO = "guarda-do-alvo"
+    # Distinto de DEFEITO_DE_SPEC: lá o critério não era mensurável; aqui ele
+    # era, foi atendido, e deixou de ser.
+    REGRESSAO_DE_CRITERIO = "regressao-de-criterio"
 
 
 @dataclass(frozen=True)

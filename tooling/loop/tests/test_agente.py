@@ -170,12 +170,17 @@ def test_o_prompt_nao_carrega_o_corpo_da_spec_nem_do_veredito(tmp_path: Path):
     _git(["git", "add", "-A"], cwd=alvo, check=True)
     _git(["git", "commit", "-q", "-m", "spec"], cwd=alvo, check=True)
 
-    executor = ExecutorRoteirizado(alvo)
+    marca_do_veredito = "TEXTO-QUE-SO-EXISTE-DENTRO-DO-VEREDITO"
+    executor = ExecutorRoteirizado(
+        alvo, vereditos={"alfa": f"- **C1** — atendido: {marca_do_veredito}\n"}
+    )
     driver.rodar(_config(alvo, "alfa"), executor=executor, agora=_agora)
 
     assert executor.chamadas
+    # Pelo conteúdo dos artefatos, não pela palavra "atendido": ela é o
+    # vocabulário do molde, e aparece legitimamente no pedido de auditoria.
     assert all(marca not in prompt for prompt in executor.chamadas)
-    assert all("atendido" not in prompt for prompt in executor.chamadas)
+    assert all(marca_do_veredito not in prompt for prompt in executor.chamadas)
 
 
 def test_trocar_o_comando_nao_muda_a_sequencia_de_decisoes(tmp_path: Path):

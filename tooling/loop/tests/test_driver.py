@@ -65,6 +65,14 @@ class ExecutorRoteirizado:
         prompt = comando[-1]
         self.chamadas.append(prompt)
 
+        if "-auditoria.md" in prompt:
+            # A auditoria também é uma fase que funciona: fake que não escreve
+            # o arquivo faria todo ciclo escalar por regressão.
+            nome = prompt.split("-auditoria.md")[0].split("/")[-1].split("\\")[-1]
+            destino = self.alvo / "docs" / "specs" / f"{nome}-auditoria.md"
+            destino.write_text("- **C1** — atendido\n", encoding="utf-8")
+            return 0, ""
+
         # Pelo início da frase: o caminho temporário do pytest carrega o nome do
         # teste, e "verificar" aparece dentro dele em vários.
         if prompt.startswith("Use a skill codificar"):

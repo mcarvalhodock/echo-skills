@@ -171,11 +171,12 @@ def test_cadeia_de_decisao_nao_importa_relogio_nem_io():
     # sabotar o relógio não pega um import lazy dentro de função.
     import dependencia
     import lote
+    import molde
     import roteador
     import secoes
     import veredito
 
-    for modulo in (roteador, veredito, lote, dependencia, secoes):
+    for modulo in (roteador, veredito, lote, dependencia, secoes, molde):
         fonte = Path(modulo.__file__).read_text(encoding="utf-8")
         for proibido in PROIBIDOS:
             assert proibido not in fonte, (
