@@ -33,9 +33,9 @@
 
 <preencher: um de "ortodoxo" (default, tudo é teste automatizado) / "parcial" (o que dá, automatiza; resto é plano manual) / "manual" (codebase legada onde TDD é inviável). Reflita honestamente o que a codebase suporta hoje — não o que você gostaria que ela suportasse>
 
-## Hooks ativos
+## Paths de produção
 
-<preencher: lista dos hooks copiados pelo instalador em `tooling/hooks/`. Se você não habilitou hooks in-session no harness ainda, deixe claro que estão presentes mas não invocados>
+<preencher: padrões de path que o CI trata como código de produção, um por linha em bullet — ex.: `^src/`, `^lib/`. Sem esta seção, `pr_spec_diff` usa os defaults, que provavelmente não são os seus>
 
 ## CI templates ativos
 

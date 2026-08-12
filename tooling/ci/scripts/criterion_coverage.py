@@ -33,9 +33,20 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+# Dois formatos, porque o repositório tem specs das duas eras:
+#   v2: "- **A1**: descrição"
+#   v3: "- [ ] **C1** `[domínio]` — descrição"
+# O padrão antigo exigia os dois-pontos e lia ZERO critérios numa spec v3 —
+# e zero critérios lidos vira zero critérios sem cobertura, ou seja, verde
+# sobre uma spec que o script não conseguiu abrir.
 CRITERION_PATTERN = re.compile(
-    r"^\s*-\s+\*\*([A-Z]\d+)\*\*\s*:", re.MULTILINE
+    r"^\s*[-*+]\s+(?:\[[ xX]\]\s+)?\*\*([A-Z]\d+)\*\*", re.MULTILINE
 )
+
+# Não são specs: vereditos julgam uma spec, e listam os mesmos identificadores
+# em linhas de bullet. Sem esta exclusão o script inventaria critérios a partir
+# do parecer e exigiria teste para eles.
+NOT_A_SPEC = re.compile(r"-(?:log|fidelidade|manual-validation|veredito(?:-\d+)?)\.md$")
 
 MARKER_PATTERN = re.compile(r"spec\s*:\s*([A-Z]\d+)", re.IGNORECASE)
 
@@ -98,11 +109,7 @@ def evaluate(
     covered_ids = collect_covered_ids(tests_dir, specs_dir)
 
     for spec_path in sorted(specs_dir.rglob("*.md")):
-        name = spec_path.name
-        if any(
-            name.endswith(suffix)
-            for suffix in ("-log.md", "-fidelidade.md", "-manual-validation.md")
-        ):
+        if NOT_A_SPEC.search(spec_path.name):
             continue
 
         content = spec_path.read_text(encoding="utf-8")

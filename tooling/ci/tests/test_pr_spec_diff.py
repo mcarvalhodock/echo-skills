@@ -6,7 +6,7 @@ para integração; aqui focamos na lógica de decisão.
 
 from __future__ import annotations
 
-from conftest import pr_spec_diff
+from _ci_helpers import pr_spec_diff
 
 
 class TestClassificacaoDePath:

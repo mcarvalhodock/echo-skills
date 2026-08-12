@@ -25,7 +25,7 @@ Isto é uma declaração, não uma pendência: as próximas specs deste reposit�
 
 - Git (repositório versionado, branch de trabalho: `refatoracao/spec-loop-engineering`).
 - Editor Markdown (declaração pura de método continua sendo o núcleo do repositório).
-- Python (para scripts de hook, quando começarem a existir em `tooling/hooks/`).
+- Python 3.12 + pytest (scripts de CI em `tooling/ci/scripts/` e o roteador do loop em `tooling/loop/`).
 - Shell (Windows/PowerShell no ambiente do autor; scripts também disponíveis em `.sh` quando existirem, para portabilidade).
 - GitHub Actions (ou equivalente) para CI, com templates em `tooling/ci/` que os repositórios consumidores podem adaptar.
 
@@ -41,27 +41,36 @@ Ausência do campo degrada, não bloqueia — o Executor assume boas práticas g
 
 ## Hooks ativos
 
-Os três hooks de enforcement das invariantes 1 e 2 do SLE, entregues na Fase 7 da refatoração:
+**Nenhum.** Os três hooks de enforcement de papel foram removidos na v3: custaram mais do que protegiam, e a v2 blindada por eles produziu um "verde ponta a ponta" com sete critérios não atendidos. Blindagem não comprou correção.
 
-- [`tooling/hooks/block-designer-writing-code/`](../tooling/hooks/block-designer-writing-code/) — bloqueia Designer escrevendo código de produção
-- [`tooling/hooks/block-validator-writing-code/`](../tooling/hooks/block-validator-writing-code/) — enforça a invariante 2 na redação v5 ("ninguém assina o que escreveu"): bloqueia Validator alterando código de produção **sem emenda declarada e registrada**, e bloqueia incondicionalmente na Fase Traduzir (`--emenda`, `--fase`)
-- [`tooling/hooks/block-executor-writing-tests-semantically/`](../tooling/hooks/block-executor-writing-tests-semantically/) — Executor pode refactor não-semântico em testes (DRY, fixtures), mas não pode alterar semântica (v4)
-
-Cobertura: 35 testes em `tooling/hooks/tests/`, cobrindo bloqueio efetivo e não-interferência em operações permitidas. Ativação em Claude Code / Cursor / git pre-commit documentada em cada README de hook.
-
-Neste repositório (que é markdown puro + tooling em Python), os hooks não são invocados pelo harness — servem como referência e templates para repositórios consumidores.
+A separação de papéis hoje é comprada por **sessão limpa por fase** — que é isolamento de contexto, não de escrita. Se um hook voltar, ele mora no driver do loop, não no método.
 
 ## CI templates ativos
 
-Os três workflows GitHub Actions em `tooling/ci/` com scripts Python portáveis:
+Dois workflows GitHub Actions em `tooling/ci/`, com scripts Python portáveis:
 
-- [`tooling/ci/spec-test-parity.yml`](../tooling/ci/spec-test-parity.yml) — cada spec declara seus testes; cada caminho declarado existe
-- [`tooling/ci/criterion-coverage.yml`](../tooling/ci/criterion-coverage.yml) — cada critério (`A1`, `C2`, ...) tem marcador em algum teste ou em `manual-validation.md`
+- [`tooling/ci/criterion-coverage.yml`](../tooling/ci/criterion-coverage.yml) — cada critério (`A1`, `C2`, `L3`, …) tem marcador `spec:<ID>` em algum teste ou em `-manual-validation.md`
 - [`tooling/ci/pr-spec-diff.yml`](../tooling/ci/pr-spec-diff.yml) — código de produção não muda no PR sem que uma spec correspondente também mude
 
-Cobertura: 16 testes em `tooling/ci/tests/`. Scripts são adaptáveis para GitLab CI, CircleCI, pre-push local (README de `tooling/ci/` detalha).
+Cobertura: 14 testes em `tooling/ci/tests/`.
 
-Neste repositório os workflows estão presentes como referência canônica — não estão habilitados em `.github/workflows/`, porque a superfície do repo (markdown + tooling isolado) não tem "código de produção" no sentido tradicional. Repositórios consumidores copiam para `.github/workflows/` e ajustam `Paths de produção` do próprio manifesto.
+`spec-test-parity` foi aposentado: exigia uma seção `## Testes vinculados` que o formato v3 não tem. Ver `tooling/ci/README.md`.
+
+Neste repositório os workflows estão presentes como referência canônica — não estão habilitados em `.github/workflows/`. Repositórios consumidores copiam para lá e ajustam os paths de produção do próprio manifesto.
+
+## Paths de produção
+
+Lidos por `pr_spec_diff`. Aqui, "produção" é o que outros repositórios consomem:
+
+- `^tooling/`
+- `^scripts/`
+- `^(especificar|codificar|verificar|homologar)/`
+
+## Loop
+
+`tooling/loop/` — o roteador que decide a próxima transição do ciclo a partir do estado observável, para que o humano deixe de ser o barramento de mensagens entre as fases. Núcleo determinístico e puro (`roteador.py`, `veredito.py`), registro em JSONL (`registro.py`). Specs em `docs/specs/roteador-*.md`.
+
+O loop mora **com o método**, não nos repositórios-alvo: ele recebe o alvo por parâmetro e opera sobre N codebases. O instalador não o copia para o consumidor, e isso é deliberado.
 
 ## Nível de rigor esperado
 
@@ -81,11 +90,13 @@ Não se aplica — repositório de uso pessoal. Ver [`propostas/expansao-para-ti
 
 ## Quando este manifesto muda
 
-- Chegada de novos hooks/CI templates: campos "Hooks ativos" e "CI templates ativos" ganham entradas.
+- Chegada ou remoção de CI templates: o campo "CI templates ativos" acompanha. Um verificador que deixa de ler o formato vigente é defeito, não desatualização.
 - Reavaliação de rigor (raro): mudança do campo "Nível de rigor esperado" ou `tdd-aplicavel` exige justificativa registrada em `.sle/pressao-metodo.md`.
 - Domínios ativos podem crescer se a superfície do repositório crescer (ex: se `segurança` passar a ser relevante quando hooks acessarem tokens externos).
 
 ## Histórico
 
 - **2026-08-07:** manifesto criado como parte da refatoração ECHO → SLE. Domínios `plataforma` e `integração` promovidos de inativos a ativos (o método ganhou componente executável). Campo `tdd-aplicavel` adicionado no ajuste v3.
-- **2026-08-07 (fim do dia):** Fase 7 concluída — três hooks (`tooling/hooks/`) e três workflows CI (`tooling/ci/`) entregues com 51 testes verdes. Campos "Hooks ativos" e "CI templates ativos" refletem estado real (não mais "previsto"). Fase 8 (migração de identidade) em andamento.
+- **2026-08-07 (fim do dia):** Fase 7 concluída — três hooks (`tooling/hooks/`) e três workflows CI (`tooling/ci/`) entregues com 51 testes verdes.
+- **2026-08-11:** v3 do método. Cinco skills viram quatro, os três hooks e `tooling/hooks/` saem inteiros, e sobram duas invariantes e um artefato (o veredito).
+- **2026-08-12:** sessão limpa por fase e o conceito de **alvo** entram no método; nasce `tooling/loop/`. `criterion_coverage` é corrigido — o padrão dele era o da v2 e lia **zero** critérios numa spec v3, reportando sucesso sobre spec que não conseguia abrir. `spec_test_parity` é aposentado.

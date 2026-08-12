@@ -1,26 +1,18 @@
-"""Fixtures compartilhadas para testes dos scripts de CI."""
+"""Põe este diretório no path para que `_ci_helpers` seja importável.
+
+O carregamento dos scripts mora em `_ci_helpers.py`, não aqui: módulos de
+teste com o mesmo nome colidem quando a suíte completa roda de uma vez, e é
+a suíte completa que `homologar` executa. Vale para `conftest.py` e vale
+para o helper — daí o prefixo `_ci_`, e não `_helpers` genérico, que já
+existe em `scripts/tests/`.
+"""
 
 from __future__ import annotations
 
-import importlib.util
 import sys
 from pathlib import Path
-from types import ModuleType
 
-SCRIPTS_ROOT = Path(__file__).resolve().parents[1] / "scripts"
+TESTS_ROOT = Path(__file__).resolve().parent
 
-
-def _load(script_name: str, alias: str) -> ModuleType:
-    script_path = SCRIPTS_ROOT / f"{script_name}.py"
-    spec = importlib.util.spec_from_file_location(alias, script_path)
-    if spec is None or spec.loader is None:  # pragma: no cover
-        raise RuntimeError(f"não foi possível carregar {script_path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[alias] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-spec_test_parity = _load("spec_test_parity", "sle_spec_test_parity")
-criterion_coverage = _load("criterion_coverage", "sle_criterion_coverage")
-pr_spec_diff = _load("pr_spec_diff", "sle_pr_spec_diff")
+if str(TESTS_ROOT) not in sys.path:
+    sys.path.insert(0, str(TESTS_ROOT))

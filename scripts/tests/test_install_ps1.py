@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from _helpers import POWERSHELL_BIN, run_ps1
+from _helpers import POWERSHELL_BIN, REPO_ROOT, run_ps1
 
 pytestmark = pytest.mark.skipif(
     POWERSHELL_BIN is None, reason="PowerShell não disponível"
@@ -112,7 +112,11 @@ class TestCiInstall:
         wf_dir = fake_target / ".github" / "workflows"
         assert wf_dir.is_dir()
         yml_files = list(wf_dir.glob("*.yml"))
-        assert len(yml_files) >= 3
+        # Contra a origem, não contra um número: workflow entra e sai do método,
+        # e um literal aqui vira falha de teste toda vez que o CI muda de tamanho.
+        origem = list((REPO_ROOT / "tooling" / "ci").glob("*.yml"))
+        assert origem, "nenhum workflow na origem — o teste perderia o sentido"
+        assert {f.name for f in yml_files} == {f.name for f in origem}
         for yml in yml_files:
             content = yml.read_text(encoding="utf-8")
             assert "continue-on-error: true" in content, (

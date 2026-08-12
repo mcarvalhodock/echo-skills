@@ -11,8 +11,10 @@ Verifique estes três sinais:
 | Sinal | ECHO (v1) | SLE (v2) |
 | --- | --- | --- |
 | Manifesto no repositório | `.echo/manifesto.md` | `.sle/manifesto.md` (com `.echo/manifesto.md` opcionalmente como alias legado) |
-| Skills instaladas | `especificar`, `planejar`, `homologar` (3) | `designer`, `validator`, `executor`, `observer` (4) |
-| Enforcement de invariantes | Nenhum (probabilístico) | Hooks em `tooling/hooks/` + workflows em `tooling/ci/` |
+| Skills instaladas | `especificar`, `planejar`, `homologar` (3) | `especificar`, `codificar`, `verificar`, `homologar` (4) |
+| Enforcement de invariantes | Nenhum (probabilístico) | Sessão limpa por fase + workflows em `tooling/ci/` |
+
+> **Nota v3.** Este guia foi escrito quando o SLE tinha cinco skills (`designer`, `validator`, `executor`, `observer`, `specifier`) e três hooks de enforcement de papel. A v3 removeu todos eles. A tabela acima já reflete o estado atual; o passo 3 abaixo virou histórico.
 
 Se você tem qualquer sinal do ECHO, este guia é para você.
 
@@ -42,22 +44,19 @@ As skills antigas continuam instaladas — nada quebra. Você começa a usar as 
 Copie `.echo/manifesto.md` para `.sle/manifesto.md` e adicione os campos novos:
 
 - `## Padrão de código local` — referência ao STYLE.md/linter do projeto (opcional; ausência degrada, não bloqueia)
-- `## Paths de produção` — lista de padrões de path que os hooks devem tratar como código de produção. Se não declarar, defaults (`src/`, `lib/`, `app/`, `internal/`, `pkg/`, `cmd/`) são usados.
+- `## Paths de produção` — lista de padrões de path que o CI deve tratar como código de produção. Se não declarar, defaults (`src/`, `lib/`, `app/`, `internal/`, `pkg/`, `cmd/`) são usados.
 - `## tdd-aplicavel` — `ortodoxo` (default), `parcial`, ou `manual`. Reflete honestamente o que a codebase suporta.
-- `## Hooks ativos` — lista dos hooks que este repositório usa.
 - `## CI templates ativos` — lista dos workflows ativados.
 
 O `.echo/manifesto.md` original pode ficar como alias legado (adicione um cabeçalho apontando para `.sle/`) ou ser removido — as skills toleram os dois estados.
 
-### Passo 3 (custo médio): habilitar hooks in-session
+### Passo 3 — removido na v3: hooks in-session
 
-Os hooks em `tooling/hooks/` são scripts Python autocontidos. Para ativá-los no seu harness:
+**Não há hooks.** Os três hooks de enforcement de papel foram removidos: custaram mais do que protegiam, e a versão blindada por eles produziu um "verde ponta a ponta" com sete critérios não atendidos.
 
-- **Claude Code:** copie a configuração de `PreToolUse` do README de cada hook (ex.: `tooling/hooks/block-designer-writing-code/README.md`) para o seu `.claude/settings.json`. A variável `SLE_ACTIVE_ROLE` precisa ser exportada quando você invoca uma skill.
-- **Cursor:** análogo — evento `beforeFileWrite` para o mesmo comando.
-- **Fallback (git pre-commit):** cada README documenta o script bash a colocar em `.git/hooks/pre-commit`.
+O que substitui: **cada fase roda em sessão limpa** — `codificar` não vê o raciocínio de `verificar`, e vice-versa. É isolamento de contexto, não de escrita: nada impede uma fase de tocar arquivo que não é dela. Se você quiser essa fronteira, ela é um hook seu, no seu harness, e não do método.
 
-Se não conseguir habilitar hooks agora, o passo 4 (CI) faz enforcement em nível de PR — é mais tardio mas cobre o gap.
+O passo 4 (CI) faz enforcement em nível de PR.
 
 ### Passo 4 (custo médio): habilitar CI workflows
 
@@ -67,7 +66,7 @@ Antes de ativar em modo bloqueante:
 
 1. Rode em modo warning (`continue-on-error: true` no GitHub Actions) por 1-2 sprints
 2. Ajuste `## Paths de produção` no manifesto conforme os falsos-positivos aparecerem
-3. Complete `## Testes vinculados` nas specs existentes conforme o `spec_test_parity` reclamar
+3. Marque os critérios das specs existentes com `spec:<ID>` nos testes conforme o `criterion_coverage` reclamar
 
 Só ative em bloqueante quando a suíte de específicações estiver 100% verde em modo warning.
 
@@ -75,8 +74,7 @@ Só ative em bloqueante quando a suíte de específicações estiver 100% verde 
 
 Specs antigas ECHO continuam válidas, mas você pode enriquecê-las com os campos novos do SLE:
 
-- Adicionar `## Testes vinculados` no cabeçalho (para o CI `spec-test-parity`)
-- Marcar critérios com `<!-- spec:A1 -->` ou similar (para `criterion-coverage`)
+- Marcar critérios com `# spec:A1` nos testes que os cobrem (para `criterion-coverage`)
 - Em N2/N3, retro-preencher o contrato arquitetural (mesmo que seja documentando o que já foi implementado)
 
 Isso é opcional e não bloqueia. Faça em specs que você precisa revisitar de qualquer forma.
