@@ -67,14 +67,34 @@ def montar_specs(alvo: Path | str, nomes) -> tuple[SpecDoLote, ...]:
     )
 
 
-def prompt_de(fase: Fase, *, alvo: Path, spec: str, base: str | None = None) -> str:
+def prompt_de(
+    fase: Fase,
+    *,
+    alvo: Path,
+    spec: str,
+    base: str | None = None,
+    escopo: str = ".",
+) -> str:
     relativo = f"docs/specs/{spec}.md"
     if fase is Fase.CODIFICAR:
         return f"Use a skill codificar. Spec: {relativo}. Alvo: {alvo}."
     if fase is Fase.VERIFICAR:
+        if base is None:
+            # Sem git não há diff. A leitura limpa julga o estado atual — o que
+            # ainda responde ao critério, porque critério é asserção sobre o
+            # fim, não sobre o que mudou. O que se perde está declarado na spec.
+            return (
+                f"Use a skill verificar. Spec: {relativo}. "
+                f"Sem git no alvo: leia o estado atual de {escopo} "
+                f"(relativo ao alvo). Alvo: {alvo}."
+            )
+        # O escopo é relativo à RAIZ do repositório e o alvo já é a subárvore;
+        # sem dizer isso, quem lê o prompt não sabe contra qual dos dois
+        # resolver o caminho, e num monorepo os dois existem.
         return (
             f"Use a skill verificar. Spec: {relativo}. "
-            f"Ref base do diff: {base}. Alvo: {alvo}."
+            f"Ref base do diff: {base}, limitado a {escopo} "
+            f"(relativo à raiz do repositório). Alvo: {alvo}."
         )
     return f"Use a skill homologar. Alvo: {alvo}."
 
@@ -84,10 +104,26 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
     carimbar = agora or _agora_iso
     gravar = registrar or registro.registrar
 
-    impedimentos = git_alvo.impedimentos(alvo)
-    if impedimentos:
-        travado = _decisao_solta(Motivo.GUARDA_DO_ALVO, tuple(impedimentos))
+    if not alvo.is_dir():
+        travado = _decisao_solta(Motivo.GUARDA_DO_ALVO, (f"alvo não existe: {alvo}",))
         return Relato(travado, 0, _texto_da_escalada(travado, alvo))
+
+    raiz_do_repo = git_alvo.raiz(alvo)
+    com_git = raiz_do_repo is not None
+    escopo = git_alvo.subarvore(alvo, raiz_do_repo) if com_git else "."
+    avisos: list[str] = []
+
+    if com_git:
+        impedimentos = git_alvo.impedimentos(alvo)
+        if impedimentos:
+            travado = _decisao_solta(Motivo.GUARDA_DO_ALVO, tuple(impedimentos))
+            return Relato(travado, 0, _texto_da_escalada(travado, alvo))
+    else:
+        # Uma vez, na abertura. Avisar a cada fase treina a pessoa a ignorar.
+        avisos.append(
+            "modo degradado: o alvo não é repositório git — sem commit por "
+            "tentativa e sem diff na leitura limpa"
+        )
 
     specs = montar_specs(alvo, config.specs)
     caminho_reg = registro.caminho_do_registro(alvo)
@@ -116,8 +152,8 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
 
         spec = decisao.proxima_spec
         ultima_spec = spec
-        base = _base_registrada(caminho_reg, spec)
-        if fase is Fase.CODIFICAR and base is None:
+        base = _base_registrada(caminho_reg, spec) if com_git else None
+        if com_git and fase is Fase.CODIFICAR and base is None:
             base = git_alvo.head(alvo)
 
         gravar(
@@ -130,7 +166,7 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
 
         resultado = invocar(
             fase,
-            prompt_de(fase, alvo=alvo, spec=spec, base=base),
+            prompt_de(fase, alvo=alvo, spec=spec, base=base, escopo=escopo),
             alvo=alvo,
             artefato_esperado=(
                 f"docs/specs/{spec}-veredito.md" if fase is Fase.VERIFICAR else None
@@ -147,7 +183,7 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
             )
             break
 
-        if fase is Fase.CODIFICAR:
+        if com_git and fase is Fase.CODIFICAR:
             git_alvo.commitar_tentativa(
                 alvo, spec=spec, tentativa=registro.contar_tentativas(caminho_reg, spec)
             )
@@ -188,7 +224,7 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
         if decisao.decisao.acao is Acao.INVOCAR
         else _texto_da_escalada(decisao, alvo)
     )
-    return Relato(decisao, invocacoes, texto)
+    return Relato(decisao, invocacoes, "\n".join([*avisos, texto]))
 
 
 def _agora_iso() -> str:

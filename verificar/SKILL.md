@@ -14,9 +14,12 @@ Você roda em sessão limpa: não escreveu o código, não viu a implementação
 
 - **o caminho da spec**;
 - **o ref base do diff** — contra o que medir. Sem ele você não tem o que ler, e adivinhar o ponto de corte produz medição de outra coisa;
+- **o escopo** — a subárvore do alvo dentro do repositório, `.` quando o alvo é a raiz. Num monorepo, sem isso você mede o trabalho de outros times junto;
 - **o alvo** — o codebase.
 
 Faltou um deles? **Pare e diga qual.** Não estime o base por histórico nem por data.
+
+**Alvo sem git não tem ref base**, e aí a leitura limpa julga o estado atual em vez do diff. É degradação declarada, não improviso: você perde a diferença entre *"isto é verdade"* e *"isto passou a ser verdade"*, e critério satisfeito por código anterior à demanda passa a ser lido como atendido.
 
 ## O que você NÃO faz
 
@@ -39,10 +42,16 @@ Se algum comando altera ou apaga dado, confirme antes que o alvo é ambiente iso
 Abra um subagente de contexto limpo com este pedido — **molde fixo, sem uma linha de prosa sua**:
 
 ```
-Leia <alvo>/docs/specs/<nome>.md e o diff de <base>..HEAD.
+Leia <alvo>/docs/specs/<nome>.md e o diff de <base>..HEAD limitado a <escopo>.
 Para cada critério, uma linha "- **<ID>** — atendido|não atendido|não verificável", e o porquê depois.
 Não sugira correção. Não leia mais nada.
 Saída em <alvo>/docs/specs/<nome>-veredito.md.
+```
+
+Sem git no alvo, a primeira linha vira — e só ela:
+
+```
+Leia <alvo>/docs/specs/<nome>.md e o estado atual de <escopo>.
 ```
 
 A segunda linha fixa o **molde**, não só o vocabulário, e isso é recente: o veredito é lido por máquina no loop, e um formato livre fez um parser ler seis critérios atendidos como não verificáveis. A classificação abre o texto depois do travessão; a justificativa vem em seguida e não é lida por ninguém além de você.

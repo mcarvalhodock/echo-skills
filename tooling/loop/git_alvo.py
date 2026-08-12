@@ -31,11 +31,17 @@ _E_ESCRITURACAO = re.compile(r"^\.sle/loop[^/]*\.jsonl$")
 
 
 def _git(alvo: Path | str, *args: str) -> str:
+    # `encoding="utf-8"`: o git fala UTF-8, e sem isto o Python decodifica com a
+    # codepage do sistema — num Windows pt-BR, `fusível/` volta como `fus?vel/`
+    # e o caminho deixa de casar com o do disco.
+    # `core.quotePath=false`: sem isto o git devolve `"fus\303\255vel"` com aspas
+    # e escapes octais, e o nome precisaria ser desmontado à mão.
     concluido = subprocess.run(
-        ["git", *args],
+        ["git", "-c", "core.quotePath=false", *args],
         cwd=str(alvo),
         capture_output=True,
         text=True,
+        encoding="utf-8",
         check=True,
     )
     return concluido.stdout.strip()
@@ -46,6 +52,34 @@ def _tenta_git(alvo: Path | str, *args: str) -> str | None:
         return _git(alvo, *args)
     except subprocess.CalledProcessError:
         return None
+
+
+def raiz(alvo: Path | str) -> Path | None:
+    """A raiz do repositório que contém o alvo, ou None. Única sonda de git.
+
+    Uma chamada só, e quem precisa das duas respostas (é repo? qual subárvore?)
+    reaproveita esta: em modo degradado, o loop não pode ficar tateando git.
+    """
+    saida = _tenta_git(alvo, "rev-parse", "--show-toplevel")
+    return Path(saida) if saida else None
+
+
+def e_repositorio(alvo: Path | str) -> bool:
+    return raiz(alvo) is not None
+
+
+def subarvore(alvo: Path | str, raiz_conhecida: Path | None = None) -> str:
+    """O caminho do alvo relativo à raiz do repositório. `.` quando é a raiz.
+
+    O alvo é uma SUBÁRVORE, não um repositório. Num monorepo, tratar os dois
+    como a mesma coisa faz a guarda reprovar o trabalho de outro time e a
+    leitura limpa julgar a spec contra o diff do repositório inteiro.
+    """
+    topo = raiz_conhecida or raiz(alvo)
+    if topo is None:
+        return "."
+    relativo = Path(alvo).resolve().relative_to(Path(topo).resolve())
+    return relativo.as_posix() or "."
 
 
 def head(alvo: Path | str) -> str:
@@ -71,7 +105,10 @@ def sujos(alvo: Path | str) -> tuple[str, ...]:
     # `--untracked-files=all` lista arquivo por arquivo; sem ele, um diretório
     # inteiramente novo vira uma linha só e não dá para separar a escrituração
     # do loop do que é trabalho de quem roda.
-    saida = _git(alvo, "status", "--porcelain", "--untracked-files=all")
+    # `-- .` limita à subárvore do alvo. Sem isso, num monorepo, o arquivo que
+    # outro time deixou sujo noutro pacote impede este ciclo de começar — e
+    # árvore inteiramente limpa é coisa que monorepo quase nunca tem.
+    saida = _git(alvo, "status", "--porcelain", "--untracked-files=all", "--", ".")
     # As duas primeiras colunas são o status (índice e working tree); o resto,
     # depois do espaço, é o caminho. Cortar três engole a primeira letra do nome
     # quando o status ocupa as duas colunas.
@@ -106,8 +143,13 @@ def commitar_tentativa(
     alvo: Path | str, *, spec: str, tentativa: int
 ) -> str | None:
     """Recolhe tudo que a tentativa mudou num commit marcado. None se nada mudou."""
-    _git(alvo, "add", "-A", "--", ".", f":!{ESCRITURACAO_DO_LOOP}")
-    if not _git(alvo, "diff", "--cached", "--name-only"):
+    escopo = ("--", ".", f":!{ESCRITURACAO_DO_LOOP}")
+
+    _git(alvo, "add", "-A", *escopo)
+    # A verificação de vazio também é escopada: com algo já no índice fora da
+    # subárvore, o índice inteiro pareceria ter conteúdo e o commit sairia por
+    # mudança que não é desta demanda.
+    if not _git(alvo, "diff", "--cached", "--name-only", *escopo):
         return None
 
     mensagem = (
@@ -115,5 +157,9 @@ def commitar_tentativa(
         f"\n"
         f"{TRAILER}: {spec}#{tentativa}\n"
     )
-    _git(alvo, "commit", "-q", "-m", mensagem)
+    # Com caminhos, e não só `-m`: `git commit` sem pathspec grava o ÍNDICE
+    # INTEIRO. Mudança que outro time já tinha deixado staged fora da subárvore
+    # entraria num commit rotulado `loop(...)` — e a guarda não a veria, porque
+    # ela só olha a subárvore. Cada metade certa, o vão entre as duas.
+    _git(alvo, "commit", "-q", "-m", mensagem, *escopo)
     return head(alvo)

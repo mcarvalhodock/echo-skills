@@ -28,7 +28,7 @@ Nada mais é invariante. Não há papel bloqueado por hook, não há marker-file
 Um subagente de contexto limpo, que não participou, lê só os artefatos e escreve em arquivo:
 
 ```
-Leia <alvo>/docs/specs/<nome>.md e o diff de <base>..HEAD.
+Leia <alvo>/docs/specs/<nome>.md e o diff de <base>..HEAD limitado a <escopo>.
 Para cada critério, uma linha "- **<ID>** — atendido|não atendido|não verificável", e o porquê depois.
 Não sugira correção. Não leia mais nada.
 Saída em <alvo>/docs/specs/<nome>-veredito.md.
