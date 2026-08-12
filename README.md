@@ -34,6 +34,8 @@ especificar × N → ┤aprovar o lote├ → (codificar → verificar) × N →
 
 Método completo, em uma página: [`metodologia-sle.md`](./metodologia-sle.md).
 
+**E os critérios não envelhecem em silêncio.** Antes de fechar o ciclo, todos os critérios de todas as specs do alvo são relidos contra o código que existe agora — porque veredito julga o código de um momento, e o código muda depois.
+
 ## As duas invariantes
 
 1. **O contrato precede a construção.** Spec escrita por quem já sabe como vai construir vira descrição, não contrato — e nenhuma verificação posterior detecta isso.
@@ -60,6 +62,7 @@ O método não mora no codebase que ele trabalha. Instala-se uma vez e opera sob
 ├── scripts/install.*           # instaladores (bash e PowerShell) + testes
 ├── tooling/ci/                 # enforcement de repositório (2 workflows)
 ├── tooling/loop/               # o loop — decisão pura + driver ([guia](./tooling/loop/README.md))
+│                               # casa, cadastro, painel, console e auditoria
 ├── propostas/                  # tese histórica (v1..v4) — leitura, não vigente
 └── docs/                       # specs, vereditos, planos e guia de migração
 ```
@@ -81,6 +84,8 @@ Para escopo local, copie para `.claude/skills/` na raiz do projeto. No Claude.ai
 
 O `sle` não precisa de instalação: Python 3.10+, sem dependência externa, rodando do clone. Mas ele **depende das skills instaladas**, porque cita cada uma pelo nome — e avisa quando a instalada divergir da do clone, que é erro fácil de cometer e caro de perceber.
 
+A ferramenta guarda o que você escreveu — hoje só o cadastro de repositórios — em `~/.sle/`, ou onde `SLE_CASA` apontar. O estado do trabalho não vai para lá: ele é derivado dos artefatos de cada alvo, toda vez.
+
 ## No dia a dia
 
 1. **Conserto?** Se a régua é um comando com exit code que você escreve antes, nada novo persiste e nenhum contrato público muda — conserte e pronto. Sem spec, sem ciclo. As três perguntas são objetivas de propósito: enquanto o ônus for "justifique por que isto é barato", a resposta segura é sempre escalar.
@@ -93,12 +98,17 @@ O `sle` não precisa de instalação: Python 3.10+, sem dependência externa, ro
 Nada disso precisa ser digitado fase a fase. É para isso que existe o `sle`:
 
 ```bash
-./scripts/sle pedir --alvo /projeto              # conversa, escreve as specs, para
-                                                 # você lê e aprova
-./scripts/sle rodar --alvo /projeto --specs a,b  # headless até o checklist
+sle repo add api ~/projeto     # registra o repositório, uma vez
+sle painel                     # o que cada projeto espera de você
+sle pedir --alvo api           # conversa, escreve as specs, para
+                               # você lê e aprova
+sle rodar --alvo api --specs a,b   # headless: codificar, verificar,
+                                   # auditar todos os critérios, homologar
 ```
 
-`pedir` lê `<alvo>/pedidos.md` — um `##` por demanda, o cabeçalho é o nome da spec — e abre uma sessão por pedido. `rodar` percorre o lote, commita cada tentativa de forma marcada, roda a suíte no fim e para no checklist. Comece pelo `--seco` nos dois.
+Ou `sle` puro, que abre um console onde você seleciona um repositório e trabalha de dentro.
+
+`pedir` lê `<alvo>/pedidos.md` — um `##` por demanda, o cabeçalho é o nome da spec — e abre uma sessão por pedido. `rodar` percorre o lote, commita cada tentativa de forma marcada, **relê todos os critérios do alvo contra o código atual**, roda a suíte e para no checklist. Comece pelo `--seco`.
 
 Sai com **0** em gate planejado, **não-zero** em exceção — dá para encadear sem ler a saída. Guia completo (flags, monorepo, outro agente, o que cada parada significa, como limpar o histórico): [`tooling/loop/README.md`](./tooling/loop/README.md).
 
@@ -110,7 +120,8 @@ Sai com **0** em gate planejado, **não-zero** em exceção — dá para encadea
 - **A v3 não rodou um ciclo inteiro num projeto que não seja este.** Ela nasceu do post-mortem da v2, e se construiu aplicando o próprio método a si mesma; o teste é o próximo projeto real.
 - **`homologar` no fim pressupõe que existe um fim.** Em produto contínuo, "fim" provavelmente vira cadência — e essa cadência ainda não está definida.
 - **A leitura limpa custa um subagente por demanda.** É barata perto do que substituiu, mas não é grátis, e ainda não sei o piso de demanda em que ela deixa de valer.
-- **Três dívidas reconhecidas e sem spec:** o campo `evidencia` da decisão carrega sete significados diferentes; `guarda-do-alvo` cobre cinco falhas distintas que ninguém distingue programaticamente; e `criterion_coverage` mantém um conjunto **global** de identificadores, então prefixo repetido entre specs esconde lacuna alheia.
+- **Quatro dívidas reconhecidas e sem spec:** `driver.py` tem 815 linhas e carrega o laço, os dois segmentos, a auditoria e o despacho de seis subcomandos — o próximo módulo tem 213; o campo `evidencia` da decisão carrega oito significados diferentes; `guarda-do-alvo` cobre cinco falhas distintas que ninguém distingue programaticamente; e `criterion_coverage` mantém um conjunto **global** de identificadores, com 16 prefixos em uso, então prefixo repetido entre specs esconde lacuna alheia.
+- **Metade do enum `Motivo` mora no módulo puro sem ser usada lá.** São 12 membros e 6 aparecem só em `lote`, `driver` e na auditoria: cada camada nova que inventa um motivo de parada edita o núcleo.
 - **`docs/specs/instaladores-sle.md` é da v2** e descreve skills que não existem mais. O CI acusa onze critérios descobertos por causa dela, e isso é honesto — a spec é que está velha.
 
 ## Licença

@@ -44,8 +44,63 @@ O loop em si não precisa de instalação: Python 3.10+, sem dependência extern
 ## Como invocar
 
 ```bash
-python tooling/loop/driver.py --alvo /caminho/do/projeto --specs cadastro,cobranca
+sle                    # abre o console, quando você está num terminal
+sle repo add api ~/api # registra um repositório
+sle painel             # o que cada um espera de você
+sle pedir --alvo api   # segmento 1: conversa e escreve as specs
+sle rodar --alvo api --specs cadastro,cobranca   # segmento 2: headless até o checklist
 ```
+
+Os invólucros são `scripts/sle` e `scripts/sle.ps1`. Todo comando aceita `--seco`, que mostra o que faria sem invocar, registrar ou commitar.
+
+**Código de saída:** `0` em parada planejada (gate ou ensaio), não-zero em exceção. Dá para encadear sem ler a saída.
+
+### A casa e o cadastro
+
+O `sle` guarda o que **você escreveu** em `~/.sle/` — ou onde `SLE_CASA` apontar. Hoje isso é só o cadastro de repositórios, em `repos.md`:
+
+```markdown
+- api: /trabalho/api
+- site: /trabalho/site
+```
+
+`sle repo add|list|rm` é conveniência, não a única porta: o arquivo é markdown e você edita à mão. `add` **acrescenta** sem reescrever o que já estava lá — ordem, comentários e linhas em branco são seus.
+
+Depois disso, `--alvo` aceita o apelido no lugar do caminho.
+
+**O que não fica na casa é o estado do trabalho.** Em que fase cada projeto está, qual tentativa, o que travou — isso é derivado dos artefatos do alvo, toda vez. Cache que diverge é como uma ferramenta passa a mentir com confiança, e aqui seria sobre N projetos ao mesmo tempo.
+
+### O painel
+
+```
+$ sle painel
+api: aguarda você: checklist de homologação
+site: em andamento — codificar em `cobranca`
+antigo: travado — teto-de-tentativas em `relatorio`
+novo: não começou — sem registro de ciclo
+sumido: inacessível — não encontrei /trabalho/sumido
+```
+
+Somente-leitura: não invoca agente, não escreve nada em alvo nenhum, e roda com um ciclo em andamento noutro terminal. Sai com **0** mesmo havendo travado — ele relata, não julga.
+
+**"Pronto" não existe nessa lista.** Ninguém verificou os critérios daquele alvo, e "aguarda checklist" é o mais longe que dá para ir com honestidade.
+
+### O console
+
+```
+$ sle
+sle[nenhum repositório]> usar api
+sle[api]> tarefas
+api: aguarda você: checklist de homologação
+sle[api]> rodar --specs cadastro
+sle[api]> sair
+```
+
+Com um repositório selecionado, `pedir`, `rodar` e `tarefas` dispensam o `--alvo`. Nada além de `sair` e do fim de entrada encerra a sessão — nem comando desconhecido, nem erro dentro de um comando, nem Ctrl-C, nem aspas mal fechadas.
+
+A seleção vive **só na sessão**: sair e entrar de novo começa sem seleção. Persistir "último usado" seria a ferramenta agir sobre um alvo que você não escolheu desta vez.
+
+`sle` puro abre o console quando entrada e saída são terminal. Fora dele — pipe, CI, script — mantém a ajuda e a saída 2.
 
 | flag | o que faz |
 |---|---|
@@ -142,14 +197,24 @@ codificar → verificar → (veredito) → codificar de novo, próxima spec, ou 
 |---|---|
 | `codificar` terminou | invoca `verificar` |
 | veredito todo `atendido`, e há spec pendente | invoca `codificar` na próxima |
-| veredito todo `atendido`, e o lote acabou | para em `homologar` e mostra o relatório |
+| veredito todo `atendido`, e o lote acabou | **audita todos os critérios**, depois roda `homologar` |
 | veredito com `não atendido`, tentativas < teto | invoca `codificar` de novo |
 | veredito com `não verificável` | **para e chama você** — é defeito de spec, e mais uma volta só queima tentativa |
 | teto de tentativas estourado | **para e chama você**, com os vereditos produzidos |
 
 Cada fase roda em **processo novo**, em sessão limpa. Retentativa também: retomar sessão traria o raciocínio da tentativa anterior junto, que é o que a sessão limpa existe para cortar.
 
-O loop **não invoca `homologar`** — ele para ali. Homologar termina num gate humano de qualquer forma, e rodá-la sozinha produziria um checklist que ninguém leria na hora em que foi gerado.
+### A auditoria, antes do fim
+
+Fechado o lote, **todos os critérios de todas as specs do alvo** são relidos contra o código que existe agora — não só os do ciclo.
+
+Existe porque veredito envelhece. Um deles, neste repositório, julgou código que dois commits depois já não existia, e ninguém releu: a suíte seguia verde, que é o sinal em que a invariante 2 manda não acreditar.
+
+Cada spec é relida por uma leitura limpa própria, contra o estado atual, e o resultado vai para `<nome>-auditoria.md` — o veredito da demanda não é tocado, porque as duas respondem perguntas diferentes: *foi atendido quando foi construído* e *continua sendo verdade*.
+
+**Custa uma invocação por spec**, e cresce com o alvo. Critério regredido escala com motivo próprio e `homologar` não roda — checklist de arquitetura sobre código quebrado é pergunta prematura. Spec em quarentena fica de fora: ela não foi construída.
+
+Depois disso o loop roda `homologar` — a suíte inteira e o checklist — e para ali, repassando o relatório dela na íntegra.
 
 ## Onde ele para, e o que cada parada quer dizer
 
@@ -164,6 +229,7 @@ O motivo vem impresso. Ele é a primeira coisa a ler:
 | `falha-de-invocacao` | a fase saiu com exit code ruim, ou não produziu o veredito | problema de execução, não de método |
 | `dependencia-circular` | duas specs declaram depender uma da outra | conserte o `## Depende de` — provavelmente alguém escreveu a relação invertida |
 | `lote-vazio` | todas as specs em quarentena | nada tinha insumo; `homologar` mediria o nada |
+| `regressao-de-criterio` | critério que estava atendido deixou de estar | leia a auditoria: ou o código quebrou, ou o critério envelheceu, ou o veredito original errou |
 
 **A escalada nunca transcreve o veredito.** Ela dá o caminho do arquivo, e você lê lá. Repassado, o parecer amacia sem má intenção — e é por isso que ele vai para arquivo em primeiro lugar.
 

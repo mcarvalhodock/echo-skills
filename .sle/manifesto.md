@@ -68,7 +68,12 @@ Lidos por `pr_spec_diff`. Aqui, "produção" é o que outros repositórios conso
 
 ## Loop
 
-`tooling/loop/` — o roteador que decide a próxima transição do ciclo a partir do estado observável, para que o humano deixe de ser o barramento de mensagens entre as fases. Núcleo determinístico e puro (`roteador.py`, `veredito.py`), registro em JSONL (`registro.py`). Specs em `docs/specs/roteador-*.md`.
+`tooling/loop/` — o `sle`: decide a próxima transição do ciclo a partir do estado observável, para que o humano deixe de ser o barramento de mensagens entre as fases.
+
+- **Núcleo puro**, sem disco nem relógio, com teste estrutural que reprova import proibido: `roteador.py`, `veredito.py`, `lote.py`, `dependencia.py`, `secoes.py`, `molde.py`.
+- **Casca impura**: `driver.py` (o laço e o CLI), `invocacao.py`, `git_alvo.py`, `registro.py`, `auditoria.py`, `casa.py`, `repos.py`, `painel.py`, `console.py`, `pedidos.py`, `skills_instaladas.py`.
+- Ferramenta em `scripts/sle` e `scripts/sle.ps1`; casa em `~/.sle/` (ou `SLE_CASA`), guardando só dado autorado.
+- Specs em `docs/specs/roteador-*.md`, `loop-*.md` e `sle-*.md`.
 
 O loop mora **com o método**, não nos repositórios-alvo: ele recebe o alvo por parâmetro e opera sobre N codebases. O instalador não o copia para o consumidor, e isso é deliberado.
 
