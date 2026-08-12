@@ -143,6 +143,21 @@ def commitar_tentativa(
     alvo: Path | str, *, spec: str, tentativa: int
 ) -> str | None:
     """Recolhe tudo que a tentativa mudou num commit marcado. None se nada mudou."""
+    return _commitar(
+        alvo,
+        assunto=f"loop({spec}): codificar tentativa {tentativa}",
+        marca=f"{spec}#{tentativa}",
+    )
+
+
+def commitar_spec(alvo: Path | str, *, spec: str) -> str | None:
+    """A spec recém-escrita, no mesmo formato: uma régua acha as duas."""
+    return _commitar(
+        alvo, assunto=f"loop({spec}): especificar", marca=f"{spec}#spec"
+    )
+
+
+def _commitar(alvo: Path | str, *, assunto: str, marca: str) -> str | None:
     escopo = ("--", ".", f":!{ESCRITURACAO_DO_LOOP}")
 
     _git(alvo, "add", "-A", *escopo)
@@ -152,11 +167,7 @@ def commitar_tentativa(
     if not _git(alvo, "diff", "--cached", "--name-only", *escopo):
         return None
 
-    mensagem = (
-        f"loop({spec}): codificar tentativa {tentativa}\n"
-        f"\n"
-        f"{TRAILER}: {spec}#{tentativa}\n"
-    )
+    mensagem = f"{assunto}\n\n{TRAILER}: {marca}\n"
     # Com caminhos, e não só `-m`: `git commit` sem pathspec grava o ÍNDICE
     # INTEIRO. Mudança que outro time já tinha deixado staged fora da subárvore
     # entraria num commit rotulado `loop(...)` — e a guarda não a veria, porque

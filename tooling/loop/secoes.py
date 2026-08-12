@@ -17,6 +17,12 @@ _NOME_EM_CRASE = re.compile(r"`([^`]+)`")
 
 _ITEM = re.compile(r"^\s*[-*+]\s+(.*\S)\s*$", re.MULTILINE)
 
+# `- [ ] **C1** `[miolo, plataforma]` — ...`, com o domínio opcional.
+_CRITERIO = re.compile(
+    r"^\s*[-*+]\s+(?:\[[ xX]\]\s+)?\*\*([A-Z]\d+)\*\*(?:\s*`\[([^\]]*)\]`)?",
+    re.MULTILINE,
+)
+
 
 def _secao(texto_da_spec: str, titulo: str) -> str:
     # A próxima seção é reconhecida por "##" em início de LINHA. Fechar o corpo
@@ -47,6 +53,16 @@ def declaradas(texto_da_spec: str) -> tuple[str, ...]:
         return ()
 
     return tuple(nome.strip() for nome in _NOME_EM_CRASE.findall(corpo))
+
+
+def criterios(texto_da_spec: str) -> tuple[tuple[str, tuple[str, ...]], ...]:
+    """(identificador, domínios) por critério, na ordem. Estrutura, não conteúdo."""
+    lidos = []
+    for encontrado in _CRITERIO.finditer(texto_da_spec or ""):
+        marcados = encontrado.group(2) or ""
+        dominios = tuple(d.strip() for d in marcados.split(",") if d.strip())
+        lidos.append((encontrado.group(1), dominios))
+    return tuple(lidos)
 
 
 def perguntas_em_aberto(texto_da_spec: str) -> tuple[str, ...]:

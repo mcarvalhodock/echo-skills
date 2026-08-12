@@ -50,11 +50,48 @@ python tooling/loop/driver.py --alvo /caminho/do/projeto --specs cadastro,cobran
 | flag | o que faz |
 |---|---|
 | `--alvo` | o codebase. Todo caminho é relativo a ele, nunca ao clone do método |
-| `--specs` | nomes separados por vírgula, sem caminho e sem `.md` — lidos de `<alvo>/docs/specs/<nome>.md` |
+| `--pedidos` | **segmento 1**: escreve uma spec por demanda e para no gate (default: `pedidos.md`) |
+| `--specs` | **segmento 2**: nomes separados por vírgula, sem caminho e sem `.md` |
 | `--seco` | mostra a próxima decisão e para. Não invoca, não registra, não commita |
 | `--teto` | tentativas de `codificar` por spec antes de escalar (default: 3) |
 | `--fusivel` | invocações no ciclo inteiro antes de escalar (default: 30) |
 | `--comando` | como invocar o agente; `{prompt}` marca onde entra o texto (default: `claude -p {prompt}`) |
+
+### Escrever as specs também
+
+São **dois comandos, com você no meio** — e é essa a única parada obrigatória antes do código:
+
+```bash
+# 1. escreve uma spec por demanda e para
+python tooling/loop/driver.py --alvo /projeto --pedidos
+
+# 2. você lê, emenda o que precisar — e então:
+python tooling/loop/driver.py --alvo /projeto --specs cadastro,cobranca
+```
+
+O `<alvo>/pedidos.md` tem um `##` por demanda, e **o cabeçalho é o nome da spec**, exatamente como está escrito:
+
+```markdown
+## cadastro
+
+Cliente se cadastra com e-mail e senha. A senha tem regra mínima.
+
+## cobranca-mensal
+
+Cobrar todo mês, e avisar antes.
+```
+
+Cabeçalho que não serve como nome (`[a-z0-9-]+`) é **recusado nomeando o cabeçalho**, nunca corrigido — `## Cadastro de Clientes` para o loop em vez de virar `cadastro-de-clientes` sem você saber. Pedido cuja spec já existe é pulado, para não destruir trabalho seu já revisado.
+
+O relatório do gate serve para **triar**, não só listar:
+
+```
+lote de specs escrito — revise antes de rodar o segundo comando
+  cadastro: 2 critérios [miolo, plataforma]
+  cobranca-mensal: 18 critérios [miolo] — acima do teto de 15 — bloqueada: Qual gateway?
+```
+
+**Não existe campo "aprovada" na spec**, e isso é deliberado: um campo desses é marcado sem ler. A aprovação é você rodar o segundo comando.
 
 ### Outro agente
 

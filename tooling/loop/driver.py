@@ -21,7 +21,9 @@ from pathlib import Path
 
 import git_alvo
 import invocacao
+import pedidos
 import registro
+import secoes
 import skills_instaladas
 from invocacao import COMANDO_PADRAO, invocar
 from lote import (
@@ -37,6 +39,10 @@ from roteador import TETO_PADRAO, Acao, Decisao, Fase, Motivo
 
 FUSIVEL_PADRAO = 30
 
+# O mesmo teto que `especificar` declara. O relatório do gate expõe quando ele
+# foi furado, em vez de deixar passar num lote de seis specs.
+TETO_DE_CRITERIOS = 15
+
 # O clone do método é onde este arquivo mora — não é configuração.
 CLONE_DO_METODO = Path(__file__).resolve().parents[2]
 
@@ -49,6 +55,7 @@ class Config:
     fusivel: int = FUSIVEL_PADRAO
     teto: int = TETO_PADRAO
     comando: tuple[str, ...] = COMANDO_PADRAO
+    pedidos: str | None = None
 
 
 @dataclass(frozen=True)
@@ -80,10 +87,16 @@ def prompt_de(
     spec: str,
     base: str | None = None,
     escopo: str = ".",
+    pedido: str = "",
 ) -> str:
     relativo = f"docs/specs/{spec}.md"
     if fase is Fase.CODIFICAR:
         return f"Use a skill codificar. Spec: {relativo}. Alvo: {alvo}."
+    if fase is Fase.ESPECIFICAR:
+        return (
+            f"Use a skill especificar. Nome da spec: {spec}. "
+            f"Alvo: {alvo}.\n\nPedido:\n{pedido}"
+        )
     if fase is Fase.VERIFICAR:
         if base is None:
             # Sem git não há diff. A leitura limpa julga o estado atual — o que
@@ -105,40 +118,42 @@ def prompt_de(
     return f"Use a skill homologar. Alvo: {alvo}."
 
 
-def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
+@dataclass(frozen=True)
+class Contexto:
+    alvo: Path
+    com_git: bool
+    escopo: str
+    avisos: tuple[str, ...]
+
+
+def _preparar(config: Config, executor) -> tuple[Contexto | None, Relato | None]:
+    """As guardas que valem para os dois segmentos. Uma só, para não divergirem."""
     alvo = Path(config.alvo)
-    carimbar = agora or _agora_iso
-    gravar = registrar or registro.registrar
+
+    def travar(*motivos: str) -> tuple[None, Relato]:
+        decisao = _decisao_solta(Motivo.GUARDA_DO_ALVO, motivos)
+        return None, Relato(decisao, 0, _texto_da_escalada(decisao, alvo))
 
     if not alvo.is_dir():
-        travado = _decisao_solta(Motivo.GUARDA_DO_ALVO, (f"alvo não existe: {alvo}",))
-        return Relato(travado, 0, _texto_da_escalada(travado, alvo))
+        return travar(f"alvo não existe: {alvo}")
 
     if invocacao.marcador_ausente(config.comando):
-        travado = _decisao_solta(
-            Motivo.GUARDA_DO_ALVO,
-            (f"comando sem o marcador {invocacao.MARCADOR}: {' '.join(config.comando)}",),
+        return travar(
+            f"comando sem o marcador {invocacao.MARCADOR}: {' '.join(config.comando)}"
         )
-        return Relato(travado, 0, _texto_da_escalada(travado, alvo))
 
     # Só quando o processo vai mesmo nascer: com executor injetado, a camada de
     # processo foi substituída inteira e checar o PATH não diz nada.
     if executor is None and (faltando := invocacao.executavel_ausente(config.comando)):
-        travado = _decisao_solta(
-            Motivo.GUARDA_DO_ALVO, (f"executável não encontrado no PATH: {faltando}",)
-        )
-        return Relato(travado, 0, _texto_da_escalada(travado, alvo))
+        return travar(f"executável não encontrado no PATH: {faltando}")
 
     raiz_do_repo = git_alvo.raiz(alvo)
     com_git = raiz_do_repo is not None
-    escopo = git_alvo.subarvore(alvo, raiz_do_repo) if com_git else "."
     avisos: list[str] = []
 
     if com_git:
-        impedimentos = git_alvo.impedimentos(alvo)
-        if impedimentos:
-            travado = _decisao_solta(Motivo.GUARDA_DO_ALVO, tuple(impedimentos))
-            return Relato(travado, 0, _texto_da_escalada(travado, alvo))
+        if impedimentos := git_alvo.impedimentos(alvo):
+            return travar(*impedimentos)
     else:
         # Uma vez, na abertura. Avisar a cada fase treina a pessoa a ignorar.
         avisos.append(
@@ -149,6 +164,27 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
     # A skill que o agente resolve é a instalada, não a do clone. Já rodou um
     # ciclo inteiro com uma versão anterior sem ninguém perceber.
     avisos.extend(skills_instaladas.divergencias(alvo, metodo=CLONE_DO_METODO))
+
+    return (
+        Contexto(
+            alvo=alvo,
+            com_git=com_git,
+            escopo=git_alvo.subarvore(alvo, raiz_do_repo) if com_git else ".",
+            avisos=tuple(avisos),
+        ),
+        None,
+    )
+
+
+def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
+    carimbar = agora or _agora_iso
+    gravar = registrar or registro.registrar
+
+    contexto, travado = _preparar(config, executor)
+    if travado is not None:
+        return travado
+    alvo, com_git, escopo = contexto.alvo, contexto.com_git, contexto.escopo
+    avisos = list(contexto.avisos)
 
     specs = montar_specs(alvo, config.specs)
     caminho_reg = registro.caminho_do_registro(alvo)
@@ -254,6 +290,151 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
         else _texto_da_escalada(decisao, alvo)
     )
     return Relato(decisao, invocacoes, "\n".join([*avisos, texto]))
+
+
+def rodar_pedidos(config: Config, *, executor, agora=None, registrar=None) -> Relato:
+    """Segmento 1: escreve as specs e para no gate. Nunca chama `codificar`."""
+    carimbar = agora or _agora_iso
+    gravar = registrar or registro.registrar
+    alvo = Path(config.alvo)
+
+    if config.specs and config.pedidos:
+        # A fronteira entre os dois segmentos é explícita de propósito: a
+        # aprovação é o ato de rodar o segundo comando, não um campo na spec.
+        return _travado(alvo, "--pedidos e --specs são exclusivos")
+
+    contexto, travado = _preparar(config, executor)
+    if travado is not None:
+        return travado
+    alvo, com_git = contexto.alvo, contexto.com_git
+
+    caminho = alvo / (config.pedidos or "pedidos.md")
+    if not caminho.exists():
+        return _travado(alvo, f"arquivo de pedidos não encontrado: {caminho}")
+
+    leitura = pedidos.ler(caminho.read_text(encoding="utf-8"))
+    if leitura.invalidos:
+        return _travado(
+            alvo,
+            *(
+                f"cabeçalho não serve como nome de spec: {titulo}"
+                for titulo in leitura.invalidos
+            ),
+        )
+    if not leitura.pedidos:
+        return _travado(alvo, f"nenhum pedido em {caminho}")
+
+    if config.seco:
+        # `--seco` significa a mesma coisa nos dois segmentos: nada é invocado,
+        # registrado ou commitado. Aqui isso seria N chamadas ao agente.
+        fila = [
+            f"  {p.nome}: {'pularia — a spec já existe' if caminho_da_spec(alvo, p.nome).exists() else 'especificaria'}"
+            for p in leitura.pedidos
+        ]
+        parado = _decisao_solta(Motivo.GATE_SPEC_APROVADA, ())
+        return Relato(
+            parado,
+            0,
+            "\n".join(
+                [
+                    *contexto.avisos,
+                    "modo seco — nada foi invocado, registrado ou commitado",
+                    f"fila de {len(leitura.pedidos)} pedido(s) em {caminho}:",
+                    *fila,
+                ]
+            ),
+        )
+
+    caminho_reg = registro.caminho_do_registro(alvo)
+    registro.arquivar_se_encerrado(caminho_reg)
+
+    linhas: list[str] = []
+    invocacoes = 0
+
+    for pedido in leitura.pedidos:
+        if caminho_da_spec(alvo, pedido.nome).exists():
+            # Reescrever spec sua a partir de um pedido antigo destruiria
+            # trabalho já revisado. Pular e dizer é a única saída honesta.
+            linhas.append(f"  {pedido.nome}: pulado — a spec já existe")
+            continue
+
+        if not config.seco:
+            gravar(
+                caminho_reg,
+                decisao=Decisao(Acao.INVOCAR, Motivo.TRANSICAO, fase=Fase.ESPECIFICAR),
+                instante=carimbar(),
+                alvo=alvo,
+                spec=pedido.nome,
+            )
+
+        resultado = invocar(
+            Fase.ESPECIFICAR,
+            prompt_de(
+                Fase.ESPECIFICAR, alvo=alvo, spec=pedido.nome, pedido=pedido.texto
+            ),
+            alvo=alvo,
+            artefato_esperado=f"docs/specs/{pedido.nome}.md",
+            executor=executor,
+            template=config.comando,
+        )
+        invocacoes += 1
+
+        if not resultado.ok:
+            final = _decisao_solta(
+                Motivo.FALHA_DE_INVOCACAO,
+                (f"especificar saiu com {resultado.exit_code}", pedido.nome),
+                proxima=pedido.nome,
+            )
+            _gravar_final(gravar, caminho_reg, final, carimbar, alvo, pedido.nome, config)
+            return Relato(
+                final,
+                invocacoes,
+                "\n".join([*contexto.avisos, _texto_da_escalada(final, alvo)]),
+            )
+
+        if com_git:
+            git_alvo.commitar_spec(alvo, spec=pedido.nome)
+        linhas.append(_linha_do_relatorio(alvo, pedido.nome))
+
+    final = _decisao_solta(Motivo.GATE_SPEC_APROVADA, ())
+    _gravar_final(gravar, caminho_reg, final, carimbar, alvo, "", config)
+
+    cabecalho = "lote de specs escrito — revise antes de rodar o segundo comando"
+    return Relato(final, invocacoes, "\n".join([*contexto.avisos, cabecalho, *linhas]))
+
+
+def _linha_do_relatorio(alvo: Path, nome: str) -> str:
+    """Uma linha por spec, com o que se precisa para triar — não só listar."""
+    texto = caminho_da_spec(alvo, nome).read_text(encoding="utf-8")
+    criterios = secoes.criterios(texto)
+    dominios = sorted({d for _, marcados in criterios for d in marcados})
+
+    linha = f"  {nome}: {len(criterios)} critérios"
+    if dominios:
+        linha += f" [{', '.join(dominios)}]"
+    if len(criterios) > TETO_DE_CRITERIOS:
+        linha += f" — acima do teto de {TETO_DE_CRITERIOS}"
+
+    perguntas = secoes.perguntas_em_aberto(texto)
+    if perguntas:
+        linha += f" — bloqueada: {'; '.join(perguntas)}"
+    return linha
+
+
+def _travado(alvo: Path, *motivos: str) -> Relato:
+    decisao = _decisao_solta(Motivo.GUARDA_DO_ALVO, motivos)
+    return Relato(decisao, 0, _texto_da_escalada(decisao, alvo))
+
+
+def _gravar_final(gravar, caminho_reg, decisao, carimbar, alvo, spec, config) -> None:
+    if not config.seco:
+        gravar(
+            caminho_reg,
+            decisao=decisao.decisao,
+            instante=carimbar(),
+            alvo=alvo,
+            spec=spec,
+        )
 
 
 def _agora_iso() -> str:
@@ -380,9 +561,17 @@ def main(argv=None) -> int:
         "--alvo", required=True, help="caminho do codebase sobre o qual rodar"
     )
     analisador.add_argument(
+        "--pedidos",
+        nargs="?",
+        const="pedidos.md",
+        default=None,
+        help="segmento 1: escreve uma spec por demanda do arquivo e para no "
+        "gate humano (default do arquivo: pedidos.md, relativo ao alvo)",
+    )
+    analisador.add_argument(
         "--specs",
-        required=True,
-        help="nomes separados por vírgula, sem caminho e sem .md "
+        default="",
+        help="segmento 2: nomes separados por vírgula, sem caminho e sem .md "
         "(lidos de <alvo>/docs/specs/<nome>.md)",
     )
     analisador.add_argument(
@@ -418,8 +607,13 @@ def main(argv=None) -> int:
         fusivel=args.fusivel,
         teto=args.teto,
         comando=tuple(args.comando.split()),
+        pedidos=args.pedidos,
     )
-    relato = rodar(config, executor=None)
+    if not config.pedidos and not config.specs:
+        analisador.error("informe --specs ou --pedidos")
+
+    segmento = rodar_pedidos if config.pedidos else rodar
+    relato = segmento(config, executor=None)
     print(relato.texto)
     return 0 if relato.final.decisao.acao is Acao.INVOCAR else 1
 
