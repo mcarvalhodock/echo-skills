@@ -40,6 +40,12 @@ class Motivo(Enum):
     # Usados só por `lote`, e declarados aqui porque o motivo pertence à decisão.
     DEPENDENCIA_CIRCULAR = "dependencia-circular"
     LOTE_VAZIO = "lote-vazio"
+    # Usados só pelo `driver`. `FUSIVEL` é parada por recurso e existe separado
+    # de TETO_DE_TENTATIVAS de propósito: confundir os dois faria uma parada por
+    # orçamento se ler como diagnóstico de não-convergência.
+    FUSIVEL = "fusivel"
+    FALHA_DE_INVOCACAO = "falha-de-invocacao"
+    GUARDA_DO_ALVO = "guarda-do-alvo"
 
 
 @dataclass(frozen=True)

@@ -51,23 +51,26 @@ def registrar(
     return linha
 
 
-def contar_tentativas(caminho: str | Path, spec: str) -> int:
-    """Quantas vezes `codificar` já foi invocada para esta spec."""
+def linhas(caminho: str | Path) -> tuple[dict, ...]:
+    """As decisões já gravadas, na ordem. Vazio se o registro não existe."""
     origem = Path(caminho)
     if not origem.exists():
-        return 0
+        return ()
+    return tuple(
+        json.loads(linha)
+        for linha in origem.read_text(encoding="utf-8").splitlines()
+        if linha.strip()
+    )
 
-    tentativas = 0
-    for linha in origem.read_text(encoding="utf-8").splitlines():
-        if not linha.strip():
-            continue
-        decisao = json.loads(linha)
-        if (
-            decisao.get("spec") == spec
-            and decisao.get("transicao") == _INVOCACAO_DE_CODIFICAR
-        ):
-            tentativas += 1
-    return tentativas
+
+def contar_tentativas(caminho: str | Path, spec: str) -> int:
+    """Quantas vezes `codificar` já foi invocada para esta spec."""
+    return sum(
+        1
+        for decisao in linhas(caminho)
+        if decisao.get("spec") == spec
+        and decisao.get("transicao") == _INVOCACAO_DE_CODIFICAR
+    )
 
 
 def _transicao(decisao: Decisao) -> str:

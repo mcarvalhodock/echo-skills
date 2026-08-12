@@ -66,6 +66,24 @@ class DecisaoDoLote:
     insumos_faltantes: tuple[tuple[str, tuple[str, ...]], ...] = field(default=())
 
 
+def quarentena_de(specs: tuple[SpecDoLote, ...]) -> frozenset[str]:
+    """As bloqueadas por insumo mais quem depende delas, transitivamente."""
+    bloqueadas = {spec.nome for spec in specs if spec.insumo_faltante}
+    return propagar(bloqueadas, {spec.nome: spec.depende_de for spec in specs})
+
+
+def primeira_pendente(specs: tuple[SpecDoLote, ...]) -> str | None:
+    """Por onde o lote começa: nem fechada, nem em quarentena, e sem dever nada."""
+    quarentena = quarentena_de(specs)
+    fechadas = {spec.nome for spec in specs if spec.fechada}
+    return _proxima_pendente(
+        tuple(spec.nome for spec in specs),
+        {spec.nome: spec.depende_de for spec in specs},
+        fechadas,
+        quarentena,
+    )
+
+
 def decidir_lote(estado: EstadoDoLote) -> DecisaoDoLote:
     nomes = tuple(spec.nome for spec in estado.specs)
     dependencias = {spec.nome: spec.depende_de for spec in estado.specs}

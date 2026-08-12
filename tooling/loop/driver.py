@@ -1,0 +1,299 @@
+"""O laço: percorre o lote invocando cada fase em sessão limpa.
+
+Compõe as três peças já fechadas — `roteador.decidir`, `lote.decidir_lote` e a
+invocação — sem reimplementar regra nenhuma delas. É a única camada que decide
+**e** toca o mundo: lê arquivo, chama processo, carimba o instante e commita.
+
+Duas coisas que o laço garante e que nenhuma das peças poderia garantir
+sozinha: a decisão vai para o registro **antes** da invocação que ela ordena
+(interromper e reexecutar não repete tentativa já contada), e o ref base de uma
+spec é capturado uma vez, antes da primeira tentativa — retentativa não
+reencurta o diff.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from dataclasses import dataclass, replace
+from datetime import datetime, timezone
+from pathlib import Path
+
+import git_alvo
+import registro
+from invocacao import invocar
+from lote import (
+    DecisaoDoLote,
+    EstadoDoLote,
+    SpecDoLote,
+    decidir_lote,
+    primeira_pendente,
+    quarentena_de,
+    spec_do_lote,
+)
+from roteador import TETO_PADRAO, Acao, Decisao, Fase, Motivo
+
+FUSIVEL_PADRAO = 30
+
+
+@dataclass(frozen=True)
+class Config:
+    alvo: Path
+    specs: tuple[str, ...]
+    seco: bool = False
+    fusivel: int = FUSIVEL_PADRAO
+    teto: int = TETO_PADRAO
+
+
+@dataclass(frozen=True)
+class Relato:
+    final: DecisaoDoLote
+    invocacoes: int
+    texto: str
+
+
+def caminho_da_spec(alvo: Path | str, nome: str) -> Path:
+    return Path(alvo) / "docs" / "specs" / f"{nome}.md"
+
+
+def caminho_do_veredito(alvo: Path | str, nome: str) -> Path:
+    return Path(alvo) / "docs" / "specs" / f"{nome}-veredito.md"
+
+
+def montar_specs(alvo: Path | str, nomes) -> tuple[SpecDoLote, ...]:
+    return tuple(
+        spec_do_lote(nome, caminho_da_spec(alvo, nome).read_text(encoding="utf-8"))
+        for nome in nomes
+    )
+
+
+def prompt_de(fase: Fase, *, alvo: Path, spec: str, base: str | None = None) -> str:
+    relativo = f"docs/specs/{spec}.md"
+    if fase is Fase.CODIFICAR:
+        return f"Use a skill codificar. Spec: {relativo}. Alvo: {alvo}."
+    if fase is Fase.VERIFICAR:
+        return (
+            f"Use a skill verificar. Spec: {relativo}. "
+            f"Ref base do diff: {base}. Alvo: {alvo}."
+        )
+    return f"Use a skill homologar. Alvo: {alvo}."
+
+
+def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
+    alvo = Path(config.alvo)
+    carimbar = agora or _agora_iso
+    gravar = registrar or registro.registrar
+
+    impedimentos = git_alvo.impedimentos(alvo)
+    if impedimentos:
+        travado = _decisao_solta(Motivo.GUARDA_DO_ALVO, tuple(impedimentos))
+        return Relato(travado, 0, _texto_da_escalada(travado, alvo))
+
+    specs = montar_specs(alvo, config.specs)
+    caminho_reg = registro.caminho_do_registro(alvo)
+
+    decisao = _abertura(specs)
+    invocacoes = 0
+
+    while decisao.decisao.acao is Acao.INVOCAR:
+        fase = decisao.decisao.fase
+        if fase is Fase.HOMOLOGAR:
+            # Fim do lote. `homologar` termina num gate humano de qualquer
+            # forma, e rodá-la sozinha produziria um checklist que ninguém
+            # leria na hora em que foi gerado.
+            break
+        if config.seco:
+            return Relato(decisao, 0, _texto_seco(decisao, alvo, config))
+        if invocacoes >= config.fusivel:
+            decisao = _decisao_solta(Motivo.FUSIVEL, (f"{invocacoes} invocações",))
+            break
+
+        spec = decisao.proxima_spec
+        base = _base_registrada(caminho_reg, spec)
+        if fase is Fase.CODIFICAR and base is None:
+            base = git_alvo.head(alvo)
+
+        gravar(
+            caminho_reg,
+            decisao=_com_base(decisao.decisao, fase, base, _base_registrada(caminho_reg, spec)),
+            instante=carimbar(),
+            alvo=alvo,
+            spec=spec,
+        )
+
+        resultado = invocar(
+            fase,
+            prompt_de(fase, alvo=alvo, spec=spec, base=base),
+            alvo=alvo,
+            artefato_esperado=(
+                f"docs/specs/{spec}-veredito.md" if fase is Fase.VERIFICAR else None
+            ),
+            executor=executor,
+        )
+        invocacoes += 1
+
+        if not resultado.ok:
+            decisao = _decisao_solta(
+                Motivo.FALHA_DE_INVOCACAO,
+                (f"{fase.value} saiu com {resultado.exit_code}", spec),
+                proxima=spec,
+            )
+            break
+
+        if fase is Fase.CODIFICAR:
+            git_alvo.commitar_tentativa(
+                alvo, spec=spec, tentativa=registro.contar_tentativas(caminho_reg, spec)
+            )
+
+        specs = tuple(
+            replace(s, fechada=s.fechada or s.nome in decisao.fechadas) for s in specs
+        )
+        decisao = decidir_lote(
+            EstadoDoLote(
+                specs=specs,
+                fase_concluida=fase,
+                spec_atual=spec,
+                veredito=_veredito_de(alvo, spec) if fase is Fase.VERIFICAR else None,
+                tentativas=registro.contar_tentativas(caminho_reg, spec),
+                teto=config.teto,
+                vereditos=(str(caminho_do_veredito(alvo, spec)),),
+            )
+        )
+
+    texto = (
+        _texto_do_fechamento(decisao)
+        if decisao.decisao.acao is Acao.INVOCAR
+        else _texto_da_escalada(decisao, alvo)
+    )
+    return Relato(decisao, invocacoes, texto)
+
+
+def _agora_iso() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _abertura(specs: tuple[SpecDoLote, ...]) -> DecisaoDoLote:
+    quarentena = quarentena_de(specs)
+    fechadas = tuple(s.nome for s in specs if s.fechada)
+    insumos = tuple(
+        (
+            s.nome,
+            s.insumo_faltante
+            or tuple(n for n in s.depende_de if n in quarentena),
+        )
+        for s in specs
+        if s.nome in quarentena
+    )
+    ordenada = tuple(s.nome for s in specs if s.nome in quarentena)
+    primeira = primeira_pendente(specs)
+
+    if primeira is None:
+        decisao = (
+            Decisao(Acao.INVOCAR, Motivo.TRANSICAO, fase=Fase.HOMOLOGAR)
+            if fechadas
+            else Decisao(Acao.ESCALAR, Motivo.LOTE_VAZIO, evidencia=ordenada)
+        )
+        return DecisaoDoLote(decisao, None, fechadas, ordenada, insumos)
+
+    return DecisaoDoLote(
+        Decisao(Acao.INVOCAR, Motivo.TRANSICAO, fase=Fase.CODIFICAR),
+        primeira,
+        fechadas,
+        ordenada,
+        insumos,
+    )
+
+
+def _decisao_solta(motivo: Motivo, evidencia, proxima=None) -> DecisaoDoLote:
+    return DecisaoDoLote(Decisao(Acao.ESCALAR, motivo, evidencia=tuple(evidencia)), proxima)
+
+
+def _com_base(decisao: Decisao, fase: Fase, base, ja_registrada) -> Decisao:
+    """O ref base viaja na evidência da PRIMEIRA invocação de codificar.
+
+    O registro tem esquema fechado e não ganha campo por isto; a evidência de
+    uma decisão que ainda não tem critério reprovado estava livre, e é a única
+    linha da spec cujo lugar no tempo é exatamente "antes da primeira tentativa".
+    """
+    if fase is Fase.CODIFICAR and ja_registrada is None and base:
+        return replace(decisao, evidencia=(base,))
+    return decisao
+
+
+def _base_registrada(caminho_reg, spec: str) -> str | None:
+    for linha in registro.linhas(caminho_reg):
+        if linha.get("spec") == spec and linha.get("transicao") == "invocar:codificar":
+            evidencia = linha.get("evidencia") or []
+            return evidencia[0] if evidencia else None
+    return None
+
+
+def _veredito_de(alvo: Path, spec: str) -> str | None:
+    caminho = caminho_do_veredito(alvo, spec)
+    return caminho.read_text(encoding="utf-8") if caminho.exists() else None
+
+
+def _texto_da_escalada(decisao: DecisaoDoLote, alvo: Path) -> str:
+    d = decisao.decisao
+    linhas = [
+        f"parou: {d.motivo.value}",
+        f"spec: {decisao.proxima_spec or '—'}",
+        f"evidência: {', '.join(d.evidencia) if d.evidencia else '—'}",
+    ]
+    if decisao.proxima_spec:
+        # Caminhos, nunca conteúdo: o veredito audita a sessão que o pediu, e
+        # transcrevê-lo aqui é a forma de amaciá-lo sem má intenção.
+        linhas.append(f"spec em: {caminho_da_spec(alvo, decisao.proxima_spec)}")
+        linhas.append(f"veredito em: {caminho_do_veredito(alvo, decisao.proxima_spec)}")
+    linhas.append(f"registro em: {registro.caminho_do_registro(alvo)}")
+    return "\n".join(linhas)
+
+
+def _texto_do_fechamento(decisao: DecisaoDoLote) -> str:
+    linhas = [
+        "lote encerrado",
+        f"fechadas: {', '.join(decisao.fechadas) or '—'}",
+        f"quarentena: {', '.join(decisao.quarentena) or '—'}",
+    ]
+    for nome, insumos in decisao.insumos_faltantes:
+        linhas.append(f"  {nome} espera: {', '.join(insumos) or '—'}")
+    return "\n".join(linhas)
+
+
+def _texto_seco(decisao: DecisaoDoLote, alvo: Path, config: Config) -> str:
+    d = decisao.decisao
+    fase = d.fase.value if d.fase else d.motivo.value
+    return "\n".join(
+        [
+            "modo seco — nada foi invocado, registrado ou commitado",
+            f"próxima decisão: {d.acao.value}:{fase}",
+            f"spec: {decisao.proxima_spec or '—'}",
+            f"insumos: spec={caminho_da_spec(alvo, decisao.proxima_spec)} "
+            f"alvo={alvo} teto={config.teto} fusível={config.fusivel}",
+        ]
+    )
+
+
+def main(argv=None) -> int:
+    analisador = argparse.ArgumentParser(description="Loop SLE — driver nativo.")
+    analisador.add_argument("--alvo", required=True)
+    analisador.add_argument("--specs", required=True)
+    analisador.add_argument("--seco", action="store_true")
+    analisador.add_argument("--fusivel", type=int, default=FUSIVEL_PADRAO)
+    analisador.add_argument("--teto", type=int, default=TETO_PADRAO)
+    args = analisador.parse_args(argv)
+
+    config = Config(
+        alvo=Path(args.alvo),
+        specs=tuple(nome.strip() for nome in args.specs.split(",") if nome.strip()),
+        seco=args.seco,
+        fusivel=args.fusivel,
+        teto=args.teto,
+    )
+    relato = rodar(config, executor=None)
+    print(relato.texto)
+    return 0 if relato.final.decisao.acao is Acao.INVOCAR else 1
+
+
+if __name__ == "__main__":  # pragma: no cover
+    sys.exit(main())
