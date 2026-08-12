@@ -97,7 +97,10 @@ A régua corta nos dois sentidos de propósito. Sem o primeiro lado, tudo sobe e
 [uma frase: o que muda para quem usa]
 
 ## Depende de
-[as specs que precisam estar fechadas antes desta; "nenhuma" se for o caso]
+[as specs que precisam estar fechadas antes desta; "nenhuma" se for o caso.
+Só isso, e só nome de spec: quem depende DESTA não se declara aqui, e citar
+tipo, módulo ou arquivo aqui também não. O roteador lê esta seção como grafo,
+e a relação invertida vira ciclo — que trava o lote em vez de ordená-lo.]
 
 ## Critérios
 - [ ] **C1** `[domínio]` — ...

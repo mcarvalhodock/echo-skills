@@ -4,7 +4,7 @@
 O humano deixa de ser o barramento de mensagens entre as fases do SLE: uma função determinística decide a próxima transição a partir do estado observável, e só devolve o controle nos pontos de julgamento real.
 
 ## Depende de
-Nenhuma. `roteador-lote` depende desta.
+Nenhuma.
 
 ## Critérios
 
