@@ -107,7 +107,7 @@ def test_skill_divergente_avisa_e_a_execucao_continua(tmp_path: Path):
     executor = ExecutorRoteirizado(alvo)
     relato = driver.rodar(_config(alvo, "alfa"), executor=executor, agora=_agora)
     assert executor.chamadas, "aviso não trava"
-    assert relato.final.decisao.fase is Fase.HOMOLOGAR
+    assert relato.final.decisao.motivo is Motivo.GATE_CHECKLIST
 
 
 def test_skill_ausente_e_avisada_como_ausencia(tmp_path: Path):

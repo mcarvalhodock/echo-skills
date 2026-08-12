@@ -68,7 +68,7 @@ def test_pasta_sem_git_roda_em_modo_degradado_e_avisa_uma_vez(tmp_path: Path):
     relato = driver.rodar(_config(alvo, "alfa"), executor=executor, agora=_agora)
 
     assert executor.chamadas, "modo degradado não é modo parado"
-    assert relato.final.decisao.fase is Fase.HOMOLOGAR
+    assert relato.final.decisao.motivo is Motivo.GATE_CHECKLIST
     assert relato.texto.lower().count("degradado") == 1
     assert "commit" in relato.texto and "diff" in relato.texto
 
@@ -89,7 +89,7 @@ def test_modo_degradado_so_sonda_o_git_e_nao_opera(tmp_path: Path, monkeypatch):
         _config(alvo, "alfa"), executor=ExecutorRoteirizado(alvo), agora=_agora
     )
 
-    assert relato.final.decisao.fase is Fase.HOMOLOGAR
+    assert relato.final.decisao.motivo is Motivo.GATE_CHECKLIST
     assert chamadas == [("rev-parse", "--show-toplevel")]
 
 
@@ -120,7 +120,7 @@ def test_sujeira_fora_da_subarvore_nao_impede(tmp_path: Path):
     relato = driver.rodar(
         _config(alvo, "alfa"), executor=ExecutorRoteirizado(alvo), agora=_agora
     )
-    assert relato.final.decisao.fase is Fase.HOMOLOGAR
+    assert relato.final.decisao.motivo is Motivo.GATE_CHECKLIST
 
 
 def test_sujeira_dentro_da_subarvore_ainda_impede(tmp_path: Path):

@@ -206,5 +206,5 @@ def test_o_driver_arquiva_e_a_spec_emendada_nao_nasce_esgotada(tmp_path: Path):
     )
 
     assert (alvo / ".sle" / "loop-1.jsonl").exists()
-    assert segundo.final.decisao.fase is Fase.HOMOLOGAR
+    assert segundo.final.decisao.motivo is Motivo.GATE_CHECKLIST
     assert registro.contar_tentativas(caminho, "alfa") == 1

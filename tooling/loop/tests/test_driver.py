@@ -65,10 +65,12 @@ class ExecutorRoteirizado:
         prompt = comando[-1]
         self.chamadas.append(prompt)
 
-        if "codificar" in prompt:
+        # Pelo início da frase: o caminho temporário do pytest carrega o nome do
+        # teste, e "verificar" aparece dentro dele em vários.
+        if prompt.startswith("Use a skill codificar"):
             alvo_arquivo = self.alvo / "src.py"
             alvo_arquivo.write_text(f"# {len(self.chamadas)}\n", encoding="utf-8")
-        if "verificar" in prompt:
+        if prompt.startswith("Use a skill verificar"):
             spec = self._spec_de(prompt)
             destino = self.alvo / "docs" / "specs" / f"{spec}-veredito.md"
             destino.write_text(
@@ -233,7 +235,7 @@ def test_fechamento_informa_as_tres_listas(tmp_path: Path):
         agora=_agora,
     )
 
-    assert relato.final.decisao.fase is Fase.HOMOLOGAR
+    assert relato.final.decisao.motivo is Motivo.GATE_CHECKLIST
     assert "alfa" in relato.texto
     assert "beta" in relato.texto and "gama" in relato.texto
     assert "Qual banco de dados?" in relato.texto
@@ -277,6 +279,6 @@ def test_ciclo_completo_fecha_e_commita_por_tentativa(tmp_path: Path):
 
     relato = driver.rodar(_config(alvo, "alfa"), executor=executor, agora=_agora)
 
-    assert relato.final.decisao.fase is Fase.HOMOLOGAR
+    assert relato.final.decisao.motivo is Motivo.GATE_CHECKLIST
     marcados = _git(alvo, "log", "--grep=^SLE-Loop:", "--format=%s").splitlines()
     assert marcados == ["loop(alfa): codificar tentativa 1"]

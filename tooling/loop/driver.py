@@ -116,7 +116,10 @@ def prompt_de(
             f"Ref base do diff: {base}, limitado a {escopo} "
             f"(relativo à raiz do repositório). Alvo: {alvo}."
         )
-    return f"Use a skill homologar. Alvo: {alvo}."
+    return (
+        f"Use a skill homologar. Specs do ciclo: {spec}. "
+        f"Vereditos: {escopo}. Ref base do ciclo: {base}. Alvo: {alvo}."
+    )
 
 
 @dataclass(frozen=True)
@@ -206,13 +209,10 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
     invocacoes = 0
     ultima_spec = decisao.proxima_spec or ""
 
+    saida_da_homologacao = ""
+
     while decisao.decisao.acao is Acao.INVOCAR:
         fase = decisao.decisao.fase
-        if fase is Fase.HOMOLOGAR:
-            # Fim do lote. `homologar` termina num gate humano de qualquer
-            # forma, e rodá-la sozinha produziria um checklist que ninguém
-            # leria na hora em que foi gerado.
-            break
         if config.seco:
             # Com os avisos: o ensaio também é "antes de começar", e é nele que
             # você tem chance de reinstalar a skill antes de rodar de verdade.
@@ -222,10 +222,17 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
             decisao = _decisao_solta(Motivo.FUSIVEL, (f"{invocacoes} invocações",))
             break
 
-        spec = decisao.proxima_spec
-        ultima_spec = spec
+        # `homologar` fecha o ciclo e não tem spec própria: os insumos dela são
+        # o conjunto do ciclo e a base do começo dele, não da última demanda.
+        fecha_o_ciclo = fase is Fase.HOMOLOGAR
+        spec = ", ".join(decisao.fechadas) if fecha_o_ciclo else decisao.proxima_spec
+        if not fecha_o_ciclo:
+            ultima_spec = spec
+
         base = _base_registrada(caminho_reg, spec) if com_git else None
-        if com_git and fase is Fase.CODIFICAR and base is None:
+        if fecha_o_ciclo:
+            base = _base_do_ciclo(caminho_reg) if com_git else None
+        elif com_git and fase is Fase.CODIFICAR and base is None:
             base = git_alvo.head(alvo)
 
         gravar(
@@ -238,7 +245,19 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
 
         resultado = invocar(
             fase,
-            prompt_de(fase, alvo=alvo, spec=spec, base=base, escopo=escopo),
+            prompt_de(
+                fase,
+                alvo=alvo,
+                spec=spec,
+                base=base,
+                escopo=(
+                    ", ".join(
+                        str(caminho_do_veredito(alvo, n)) for n in decisao.fechadas
+                    )
+                    if fecha_o_ciclo
+                    else escopo
+                ),
+            ),
             alvo=alvo,
             artefato_esperado=(
                 f"docs/specs/{spec}-veredito.md" if fase is Fase.VERIFICAR else None
@@ -256,6 +275,12 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
             )
             break
 
+        if fecha_o_ciclo:
+            # Repassada na íntegra, nunca resumida: o checklist é endereçado a
+            # você e não tem arquivo próprio. Parafrasear é o que amacia um
+            # parecer; encaminhar verbatim é o oposto disso.
+            saida_da_homologacao = resultado.saida
+
         if com_git and fase is Fase.CODIFICAR:
             git_alvo.commitar_tentativa(
                 alvo, spec=spec, tentativa=registro.contar_tentativas(caminho_reg, spec)
@@ -268,7 +293,7 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
             EstadoDoLote(
                 specs=specs,
                 fase_concluida=fase,
-                spec_atual=spec,
+                spec_atual=ultima_spec,
                 veredito=_veredito_de(alvo, spec) if fase is Fase.VERIFICAR else None,
                 tentativas=registro.contar_tentativas(caminho_reg, spec),
                 teto=config.teto,
@@ -297,7 +322,14 @@ def rodar(config: Config, *, executor, agora=None, registrar=None) -> Relato:
         if decisao.decisao.acao is Acao.INVOCAR
         else _texto_da_escalada(decisao, alvo)
     )
-    return Relato(decisao, invocacoes, "\n".join([*avisos, texto]))
+    partes = [*avisos]
+    if saida_da_homologacao:
+        # O ciclo fechou: as três listas continuam devidas (D10) mesmo agora que
+        # a última parada é o checklist, e não mais o próprio `homologar`.
+        partes.extend([_texto_do_fechamento(decisao), texto, saida_da_homologacao])
+    else:
+        partes.append(texto)
+    return Relato(decisao, invocacoes, "\n".join(partes))
 
 
 def rodar_pedidos(config: Config, *, executor, agora=None, registrar=None) -> Relato:
@@ -500,6 +532,14 @@ def _com_base(decisao: Decisao, fase: Fase, base, ja_registrada) -> Decisao:
     return decisao
 
 
+def _base_do_ciclo(caminho_reg) -> str | None:
+    """A base da PRIMEIRA spec do ciclo — a última já teria commits em cima."""
+    for linha in registro.linhas(caminho_reg):
+        if linha.get("transicao") == "invocar:codificar" and linha.get("evidencia"):
+            return linha["evidencia"][0]
+    return None
+
+
 def _base_registrada(caminho_reg, spec: str) -> str | None:
     for linha in registro.linhas(caminho_reg):
         if linha.get("spec") == spec and linha.get("transicao") == "invocar:codificar":
@@ -554,86 +594,100 @@ def _texto_seco(decisao: DecisaoDoLote, alvo: Path, config: Config) -> str:
     )
 
 
+GATES_PLANEJADOS = (Motivo.GATE_SPEC_APROVADA, Motivo.GATE_CHECKLIST)
+
+
+def _comuns(sub) -> None:
+    sub.add_argument("--alvo", required=True, help="caminho do codebase")
+    sub.add_argument(
+        "--seco",
+        action="store_true",
+        help="mostra o que faria e para: não invoca, não registra, não commita",
+    )
+    sub.add_argument(
+        "--comando",
+        default=" ".join(COMANDO_PADRAO),
+        help="fases headless; %s marca onde entra o texto (default: %s)"
+        % (invocacao.MARCADOR, " ".join(COMANDO_PADRAO)),
+    )
+    sub.add_argument(
+        "--comando-interativo",
+        default=" ".join(invocacao.COMANDO_INTERATIVO_PADRAO),
+        help="a sessão de conversa de `pedir`; sem flag headless (default: %s)"
+        % " ".join(invocacao.COMANDO_INTERATIVO_PADRAO),
+    )
+
+
 def main(argv=None) -> int:
     analisador = argparse.ArgumentParser(
+        prog="sle",
         description=(
-            "Loop SLE — percorre um lote de specs já aprovadas, invocando cada "
-            "fase em sessão limpa. Para nos gates humanos e nas exceções."
-        ),
-        epilog=(
-            "Exemplo:\n"
-            "  python tooling/loop/driver.py --alvo ../meu-projeto "
-            "--specs cadastro,cobranca --seco\n\n"
-            "O alvo precisa estar limpo e fora do branch default."
+            "Loop SLE — `pedir` conversa e escreve as specs; `rodar` executa o "
+            "lote headless até o checklist. Um gate humano entre os dois."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    analisador.add_argument(
-        "--alvo", required=True, help="caminho do codebase sobre o qual rodar"
+    subcomandos = analisador.add_subparsers(dest="subcomando")
+
+    pedir = subcomandos.add_parser(
+        "pedir", help="segmento 1: uma sessão interativa por demanda de pedidos.md"
     )
-    analisador.add_argument(
+    _comuns(pedir)
+    pedir.add_argument(
         "--pedidos",
-        nargs="?",
-        const="pedidos.md",
-        default=None,
-        help="segmento 1: escreve uma spec por demanda do arquivo e para no "
-        "gate humano (default do arquivo: pedidos.md, relativo ao alvo)",
+        default="pedidos.md",
+        help="arquivo de pedidos, relativo ao alvo (default: pedidos.md)",
     )
-    analisador.add_argument(
+
+    rodar_cmd = subcomandos.add_parser(
+        "rodar", help="segmento 2: codificar/verificar por spec e homologar no fim"
+    )
+    _comuns(rodar_cmd)
+    rodar_cmd.add_argument(
         "--specs",
-        default="",
-        help="segmento 2: nomes separados por vírgula, sem caminho e sem .md "
-        "(lidos de <alvo>/docs/specs/<nome>.md)",
+        required=True,
+        help="nomes separados por vírgula, sem caminho e sem .md",
     )
-    analisador.add_argument(
-        "--seco",
-        action="store_true",
-        help="mostra a próxima decisão e para: não invoca, não registra, não commita",
-    )
-    analisador.add_argument(
+    rodar_cmd.add_argument(
         "--fusivel",
         type=int,
         default=FUSIVEL_PADRAO,
-        help=f"máximo de invocações no ciclo inteiro (default: {FUSIVEL_PADRAO})",
+        help=f"máximo de invocações no ciclo (default: {FUSIVEL_PADRAO})",
     )
-    analisador.add_argument(
+    rodar_cmd.add_argument(
         "--teto",
         type=int,
         default=TETO_PADRAO,
-        help=f"máximo de tentativas de codificar por spec (default: {TETO_PADRAO})",
+        help=f"máximo de tentativas por spec (default: {TETO_PADRAO})",
     )
-    analisador.add_argument(
-        "--comando-interativo",
-        default=" ".join(invocacao.COMANDO_INTERATIVO_PADRAO),
-        help="segmento 1: como abrir a sessão de conversa. Sem flag headless "
-        "(default: %s)" % " ".join(invocacao.COMANDO_INTERATIVO_PADRAO),
-    )
-    analisador.add_argument(
-        "--comando",
-        default=" ".join(COMANDO_PADRAO),
-        help="como invocar o agente; %s marca onde entra o texto "
-        "(default: %s). Ex.: 'agent -p %s'"
-        % (invocacao.MARCADOR, " ".join(COMANDO_PADRAO), invocacao.MARCADOR),
-    )
+
     args = analisador.parse_args(argv)
+    if not args.subcomando:
+        analisador.print_help()
+        # Sair não-zero: sem subcomando nada rodou, e um script que encadeia
+        # `sle` precisa saber disso pelo código, não pelo texto.
+        raise SystemExit(2)
 
     config = Config(
         alvo=Path(args.alvo),
-        specs=tuple(nome.strip() for nome in args.specs.split(",") if nome.strip()),
+        specs=tuple(n.strip() for n in getattr(args, "specs", "").split(",") if n.strip()),
         seco=args.seco,
-        fusivel=args.fusivel,
-        teto=args.teto,
+        fusivel=getattr(args, "fusivel", FUSIVEL_PADRAO),
+        teto=getattr(args, "teto", TETO_PADRAO),
         comando=tuple(args.comando.split()),
         comando_interativo=tuple(args.comando_interativo.split()),
-        pedidos=args.pedidos,
+        pedidos=getattr(args, "pedidos", None),
     )
-    if not config.pedidos and not config.specs:
-        analisador.error("informe --specs ou --pedidos")
 
-    segmento = rodar_pedidos if config.pedidos else rodar
+    segmento = rodar_pedidos if args.subcomando == "pedir" else rodar
     relato = segmento(config, executor=None)
     print(relato.texto)
-    return 0 if relato.final.decisao.acao is Acao.INVOCAR else 1
+    # Ensaio não falha: nada foi tentado, então não há o que reportar como
+    # insucesso. Sem isto, `--seco` sai com 1 e envenena qualquer script que
+    # encadeie `sle`.
+    if config.seco:
+        return 0
+    return 0 if relato.final.decisao.motivo in GATES_PLANEJADOS else 1
 
 
 if __name__ == "__main__":  # pragma: no cover
