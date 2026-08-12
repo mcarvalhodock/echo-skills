@@ -730,7 +730,18 @@ def main(argv=None) -> int:
         help="arquivo de pedidos, relativo ao alvo (default: pedidos.md)",
     )
 
-    subcomandos.add_parser("console", help="modo interativo")
+    console_cmd = subcomandos.add_parser("console", help="modo interativo")
+    console_cmd.add_argument(
+        "--comando",
+        default=" ".join(COMANDO_PADRAO),
+        help="comando headless da sessão (default: %s)" % " ".join(COMANDO_PADRAO),
+    )
+    console_cmd.add_argument(
+        "--comando-interativo",
+        default=" ".join(invocacao.COMANDO_INTERATIVO_PADRAO),
+        help="comando de conversa da sessão (default: %s)"
+        % " ".join(invocacao.COMANDO_INTERATIVO_PADRAO),
+    )
 
     quadro = subcomandos.add_parser(
         "painel", help="o que cada repositório espera de você"
@@ -774,7 +785,10 @@ def main(argv=None) -> int:
     import console
 
     if args.subcomando == "console":
-        return console.rodar()
+        return console.rodar(
+            comando=tuple(args.comando.split()),
+            comando_interativo=tuple(args.comando_interativo.split()),
+        )
     if not args.subcomando and console.e_terminal():
         # Terminal abre o console; sem terminal (pipe, CI, script) mantém a
         # ajuda e a saída 2, que é o que o S3 protegia.

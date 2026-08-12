@@ -20,10 +20,21 @@ except ImportError:  # ausência degrada, não bloqueia
     pass
 
 import driver
+import invocacao
 import repos
+
+# Os dois agentes que existem hoje. O nome existe pela simetria com `usar`: num
+# console, colar template a cada troca é fricção que faz a pessoa não trocar.
+# O template continua para o que o nome não cobre — outro agente, ou o caminho
+# completo, que importa porque `agent` é genérico e pode colidir no PATH.
+AGENTES = {
+    "claude": (invocacao.COMANDO_PADRAO, invocacao.COMANDO_INTERATIVO_PADRAO),
+    "cursor": (("agent", "-p", invocacao.MARCADOR), ("agent", invocacao.MARCADOR)),
+}
 
 AJUDA = """comandos:
   usar <apelido>        seleciona um repositório do cadastro
+  ferramenta [nome]     mostra ou troca o agente (claude, cursor)
   tarefas               o que o selecionado espera de você
   painel                o que todos esperam
   repo add|list|rm      cadastro de repositórios
@@ -41,9 +52,13 @@ def e_terminal() -> bool:
     )
 
 
-def rodar(*, ler=input, escrever=print) -> int:
+def rodar(*, ler=input, escrever=print, comando=None, comando_interativo=None) -> int:
     """O laço da sessão. Só `sair` e o fim de entrada encerram."""
     selecionado: str | None = None
+    ferramenta = [
+        tuple(comando or invocacao.COMANDO_PADRAO),
+        tuple(comando_interativo or invocacao.COMANDO_INTERATIVO_PADRAO),
+    ]
     escrever("sle — `ajuda` lista os comandos, `sair` encerra.")
 
     while True:
@@ -75,8 +90,13 @@ def rodar(*, ler=input, escrever=print) -> int:
             if comando == "usar":
                 selecionado = _selecionar(resto, escrever) or selecionado
                 continue
+            if comando == "ferramenta":
+                _ferramenta(resto, ferramenta, escrever)
+                continue
 
-            selecionado = _despachar(comando, resto, selecionado, escrever)
+            selecionado = _despachar(
+                comando, resto, selecionado, escrever, ferramenta
+            )
         except SystemExit as saida:
             # `argparse` sai por exceção tanto no `--help` quanto no argumento
             # ruim. Rotular os dois de "inválido" seria a ferramenta mentindo
@@ -104,7 +124,38 @@ def _selecionar(resto, escrever) -> str | None:
     return None
 
 
-def _despachar(comando: str, resto, selecionado: str | None, escrever) -> str | None:
+def _ferramenta(resto, ferramenta, escrever) -> None:
+    """Mostra, troca por nome, ou troca por template. Nunca deixa sem comando."""
+    if not resto:
+        escrever(f"headless:   {' '.join(ferramenta[0])}")
+        escrever(f"interativo: {' '.join(ferramenta[1])}")
+        return
+
+    if not resto[0].startswith("--"):
+        nome = resto[0]
+        if nome not in AGENTES:
+            conhecidos = ", ".join(AGENTES)
+            escrever(f"agente desconhecido: {nome} — conhecidos: {conhecidos}")
+            return
+        ferramenta[0], ferramenta[1] = AGENTES[nome]
+        return
+
+    novos = dict(zip(resto[::2], resto[1::2]))
+    for chave, indice in (("--comando", 0), ("--interativo", 1)):
+        if chave not in novos:
+            continue
+        template = tuple(novos[chave].split())
+        if invocacao.marcador_ausente(template):
+            # Recusa, e a sessão segue com o anterior: trocar para um template
+            # quebrado deixaria o console sem comando nenhum.
+            escrever(f"template sem o marcador {invocacao.MARCADOR}: {novos[chave]}")
+            continue
+        ferramenta[indice] = template
+
+
+def _despachar(
+    comando: str, resto, selecionado: str | None, escrever, ferramenta
+) -> str | None:
     """Cada comando cai na mesma função que o subcomando usaria."""
     if comando == "repo":
         driver.main(["repo", *resto])
@@ -123,7 +174,18 @@ def _despachar(comando: str, resto, selecionado: str | None, escrever) -> str | 
         # repositório, e soltá-lo em paralelo com você digitando no mesmo alvo
         # cria conflito de working tree.
         alvo_do_comando = "painel" if comando == "tarefas" else comando
-        driver.main([alvo_do_comando, "--alvo", selecionado, *resto])
+        # Os da sessão vêm ANTES do resto: o `argparse` fica com a última
+        # ocorrência, que é a que você digitou na linha. Precedência declarada:
+        # chamada > sessão > default.
+        da_sessao = (
+            []
+            if alvo_do_comando == "painel"
+            else [
+                "--comando", " ".join(ferramenta[0]),
+                "--comando-interativo", " ".join(ferramenta[1]),
+            ]
+        )
+        driver.main([alvo_do_comando, "--alvo", selecionado, *da_sessao, *resto])
         return selecionado
 
     escrever(f"comando desconhecido: {comando} — `ajuda` lista os que existem")
