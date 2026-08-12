@@ -23,6 +23,7 @@ import auditoria
 import casa
 import git_alvo
 import invocacao
+import painel
 import pedidos
 import registro
 import repos
@@ -497,6 +498,18 @@ def _gravar_final(gravar, caminho_reg, decisao, carimbar, alvo, spec, config) ->
         )
 
 
+def _comando_painel(args) -> int:
+    """Relata, não julga: sai com 0 mesmo havendo travado."""
+    if args.alvo:
+        alvo = repos.resolver_cadastrado(args.alvo)
+        print(painel.linha_de(args.alvo, alvo))
+        return 0
+
+    for repo in repos.carregar():
+        print(painel.linha_de(repo.apelido, repo.caminho))
+    return 0
+
+
 def _comando_repo(args, analisador) -> int:
     """`repo` mexe só no cadastro: nenhum alvo é tocado por causa dele."""
     _, criada = casa.garantir()
@@ -717,6 +730,13 @@ def main(argv=None) -> int:
         help="arquivo de pedidos, relativo ao alvo (default: pedidos.md)",
     )
 
+    quadro = subcomandos.add_parser(
+        "painel", help="o que cada repositório espera de você"
+    )
+    quadro.add_argument(
+        "--alvo", default=None, help="mostra só este (apelido ou caminho)"
+    )
+
     repo = subcomandos.add_parser("repo", help="cadastro de repositórios")
     acoes = repo.add_subparsers(dest="acao")
     adicionar = acoes.add_parser("add", help="registra um repositório")
@@ -751,6 +771,8 @@ def main(argv=None) -> int:
     args = analisador.parse_args(argv)
     if args.subcomando == "repo":
         return _comando_repo(args, repo)
+    if args.subcomando == "painel":
+        return _comando_painel(args)
     if not args.subcomando:
         analisador.print_help()
         # Sair não-zero: sem subcomando nada rodou, e um script que encadeia

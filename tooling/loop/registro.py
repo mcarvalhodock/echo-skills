@@ -60,15 +60,26 @@ def registrar(
 
 
 def linhas(caminho: str | Path) -> tuple[dict, ...]:
-    """As decisões já gravadas, na ordem. Vazio se o registro não existe."""
+    """As decisões já gravadas, na ordem. Vazio se o registro não existe.
+
+    Linha que não é JSON é pulada em vez de derrubar quem lê: o arquivo é
+    append-only e alguém pode estar lendo no exato momento em que a última
+    linha está sendo escrita. Quebrar ali faria o painel morrer só porque um
+    ciclo estava em andamento noutro terminal.
+    """
     origem = Path(caminho)
     if not origem.exists():
         return ()
-    return tuple(
-        json.loads(linha)
-        for linha in origem.read_text(encoding="utf-8").splitlines()
-        if linha.strip()
-    )
+
+    lidas = []
+    for linha in origem.read_text(encoding="utf-8").splitlines():
+        if not linha.strip():
+            continue
+        try:
+            lidas.append(json.loads(linha))
+        except json.JSONDecodeError:
+            continue
+    return tuple(lidas)
 
 
 def ciclo_encerrado(caminho: str | Path) -> bool:
