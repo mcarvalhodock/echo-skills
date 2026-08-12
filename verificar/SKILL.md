@@ -8,6 +8,16 @@ disable-model-invocation: false
 
 Prove que a demanda faz o que a spec pediu. Só a demanda.
 
+## Insumos
+
+Você roda em sessão limpa: não escreveu o código, não viu a implementação acontecer, e é bom que seja assim. Precisa receber:
+
+- **o caminho da spec**;
+- **o ref base do diff** — contra o que medir. Sem ele você não tem o que ler, e adivinhar o ponto de corte produz medição de outra coisa;
+- **o alvo** — o codebase.
+
+Faltou um deles? **Pare e diga qual.** Não estime o base por histórico nem por data.
+
 ## O que você NÃO faz
 
 - **Não roda a suíte completa.** É de `homologar`.
@@ -29,11 +39,13 @@ Se algum comando altera ou apaga dado, confirme antes que o alvo é ambiente iso
 Abra um subagente de contexto limpo com este pedido — **molde fixo, sem uma linha de prosa sua**:
 
 ```
-Leia docs/specs/<nome>.md e o diff de <base>..HEAD.
-Para cada critério, diga: atendido / não atendido / não verificável, e por quê.
+Leia <alvo>/docs/specs/<nome>.md e o diff de <base>..HEAD.
+Para cada critério, uma linha "- **<ID>** — atendido|não atendido|não verificável", e o porquê depois.
 Não sugira correção. Não leia mais nada.
-Saída em docs/specs/<nome>-veredito.md.
+Saída em <alvo>/docs/specs/<nome>-veredito.md.
 ```
+
+A segunda linha fixa o **molde**, não só o vocabulário, e isso é recente: o veredito é lido por máquina no loop, e um formato livre fez um parser ler seis critérios atendidos como não verificáveis. A classificação abre o texto depois do travessão; a justificativa vem em seguida e não é lida por ninguém além de você.
 
 Três regras, e existem porque o desenho vaza sem elas:
 
@@ -59,11 +71,12 @@ Mais a linha do veredito. **O estado da demanda você pode declarar** — atendi
 
 ## Se o veredito aponta lacuna
 
-Três saídas, e a escolha é do humano — apresente as três:
+**A rota não é sua.** Você produz o veredito e para; quem lê a classificação e decide o próximo passo é o roteador, por tabela fixa:
 
-- **O código não faz o que o critério pede** → volta para `codificar`.
-- **O critério pede a coisa errada** → emenda na spec, e a demanda roda de novo.
-- **A lacuna é real e fica** → declare fora de escopo, com registro no veredito.
+- **`não atendido`** → volta para `codificar`, automático, até o teto de tentativas.
+- **`não verificável`** → sobe para o humano. Isso é defeito de spec, não de código, e mais uma volta de `codificar` só queima tentativa contra um critério que ninguém consegue medir.
+
+As três saídas de sempre continuam existindo — corrigir o código, emendar o critério, declarar a lacuna fora de escopo. As duas últimas são decisão humana, tomada no gate, não aqui.
 
 Corrigiu critério? **O veredito anterior está obsoleto e vale abrir outro.** Um veredito que julgou código que não existe mais não atesta nada.
 

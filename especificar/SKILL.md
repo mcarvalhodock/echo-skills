@@ -1,14 +1,25 @@
 ---
 name: especificar
-description: Use antes de escrever ou modificar código quando o usuário começa uma demanda nova — "implementar", "criar", "adicionar", "bora fazer", "preciso de um script que...". Também quando ele pedir explicitamente para "especificar" ou "escrever a spec". Produz um plano específico e enxuto — critérios falsificáveis e a ordem de implementação, num arquivo só. Encaminha para `codificar`. NÃO use para debugging do que já existe, pergunta conceitual, ou conserto de uma linha.
+description: Use antes de escrever ou modificar código quando o usuário começa uma demanda nova — "implementar", "criar", "adicionar", "bora fazer", "preciso de um script que...". Também quando ele pedir explicitamente para "especificar" ou "escrever a spec". Produz um plano específico e enxuto — critérios falsificáveis e a ordem de implementação, num arquivo só. Termina no gate humano: não invoca `codificar`. NÃO use para debugging do que já existe, pergunta conceitual, ou conserto de uma linha.
 disable-model-invocation: false
 ---
 
 # Especificar
 
-Transforme a demanda num **plano específico**: o que precisa ser verdade no fim, e em que ordem construir. Um arquivo, `docs/specs/<nome>.md`.
+Transforme a demanda num **plano específico**: o que precisa ser verdade no fim, e em que ordem construir. Um arquivo, `<alvo>/docs/specs/<nome>.md`.
 
-Você não escreve código e não escreve teste. Quando o plano estiver aprovado pelo humano, siga para `codificar`.
+Você não escreve código e não escreve teste. Terminada a spec, **você para**: quem aprova é o humano, e quem invoca `codificar` depois é o roteador.
+
+## Insumos
+
+Você roda em sessão limpa: nada da conversa que originou a demanda chega aqui. Precisa receber:
+
+- **o pedido** — a demanda em texto;
+- **o alvo** — o caminho do codebase sobre o qual esta spec vale.
+
+`docs/specs/` e `.sle/manifesto.md` são relativos ao **alvo**, nunca a onde o método está instalado — é o alvo que distingue um codebase do outro. O catálogo `dominios.md` é a exceção: ele é do método, e é o mesmo para todos.
+
+Faltou insumo? **Não invente.** Escreva a spec até onde os insumos alcançam e declare o que falta em "Perguntas em aberto".
 
 ## Teto de 15 critérios, e ele não é sugestão
 
@@ -26,6 +37,14 @@ Uma frase que pode ser **provada falsa por observação**. Escreva no formato "d
 - ❌ "O cadastro é seguro e tem boa experiência."
 
 Se você não consegue imaginar a observação que reprova o item, ele não é critério: ou vira critério, ou sai da spec.
+
+### Independentes, e o máximo que couber
+
+Cada critério carrega **uma** observação. Dois fatos numa frase produzem um critério que não se reprova sem ambiguidade — metade atendida, metade não, e quem verifica precisa julgar, que é exatamente o que o critério existe para evitar.
+
+Nenhum critério depende do veredito de outro: cada um se prova sozinho, contra o código, sem ordem entre eles. Prefira muitos critérios estreitos a poucos largos, e vá até onde o teto permitir.
+
+Isso não afrouxa o teto de 15 — aperta. Critério composto esconde escopo: uma spec de 15 critérios compostos é uma spec de 40 disfarçada. Se separar as observações estoura o teto, a demanda é grande demais, e essa é a leitura certa.
 
 ## Uma spec pode depender de outra. Um critério, não.
 
@@ -54,6 +73,20 @@ O domínio não é etiqueta: ele **baliza o desenvolvimento**. Diz que ferrament
 A condição 2 é a mesma regra da seção anterior, aplicada dentro da spec. Fatia que não fecha sozinha não é fatia: é a mesma spec com o trabalho espalhado, e o custo aparece só na hora de homologar.
 
 Se não separa limpo, **não force**. Spec pequena inteira vale mais que spec fatiada que precisa de reconciliação.
+
+## O que sobe para o humano, e o que é seu
+
+Toda dúvida que você levantar passa por uma régua só, e ela **não é de julgamento**:
+
+> A resposta é derivável do codebase, do manifesto, ou da própria spec?
+
+**É derivável** — derive, decida, e registre a decisão como critério ou contrato técnico. Não é pergunta: é trabalho que você tem insumo para fazer. Qual biblioteca de teste usar, onde ficam os testes, qual o padrão de nome — está tudo escrito no repositório, e escalar isso trava a pipeline com o que era seu.
+
+**Não é derivável** — sobe. Preferência, prioridade, apetite de risco, o que o negócio quer, o que ainda não está escrito em lugar nenhum. O sinal é direto: se você precisaria **supor** algo sobre a intenção de alguém, não derive. Decidir isso sozinho é fazer o que ninguém te delegou, e o custo aparece tarde, com código pronto em cima.
+
+A régua corta nos dois sentidos de propósito. Sem o primeiro lado, tudo sobe e o gate humano vira o gargalo que ele existe para eliminar. Sem o segundo, você responde no lugar de quem decide.
+
+**Uma pergunta em aberto bloqueia esta spec** — e junto dela as specs que dependem desta. As demais do lote seguem. É intencional: é o que faz escalar por preguiça custar caro, sem fazer uma dúvida legítima parar o ciclo inteiro.
 
 ## Formato
 
@@ -88,7 +121,8 @@ Se a spec for fatiável, diga aqui quais são as fatias e em que ordem — cada 
 critérios que fecha.]
 
 ## Perguntas em aberto
-[o que depende de decisão do humano; vazio se não houver]
+[só o que não é derivável. Cada item nomeia o insumo que falta, não só a dúvida.
+Vazio se não houver — e vazio é o caso comum.]
 ```
 
 Nada além disso. Sem seção de alternativas consideradas, sem análise de risco, sem nível de complexidade, sem plano de verificação — esses viraram documento em vez de decisão.
@@ -96,16 +130,20 @@ Nada além disso. Sem seção de alternativas consideradas, sem análise de risc
 ## Antes de fechar
 
 - [ ] Todo critério é falsificável.
+- [ ] **Cada critério carrega uma observação só, e nenhum depende do veredito de outro.**
 - [ ] São 15 ou menos.
 - [ ] **Nenhum critério é pré-requisito de uma spec anterior.**
 - [ ] Todo critério tem domínio marcado.
+- [ ] **Toda pergunta em aberto passou na régua do derivável** — e nomeia o insumo que falta.
 - [ ] Se há fatias, cada uma fecha sozinha.
 - [ ] O plano nomeia arquivos, e a ordem é por dependência.
 - [ ] "Fora de escopo" diz não a pelo menos uma coisa.
 - [ ] O humano aprovou.
 
-Aprovado, invoque `codificar`.
+Fechada, a spec fica esperando o gate. **Não invoque `codificar` daqui** — a próxima fase roda em sessão nova, e o gate humano fica entre as duas.
 
 ## Verbosidade é defeito, não zelo
 
-Se a spec passou de duas telas, ela está explicando em vez de decidir. Corte a explicação: quem lê já tem o contexto da conversa. O que não pode faltar é o que precisa ser **verdade**, não por que você acha que precisa.
+Se a spec passou de duas telas, ela está explicando em vez de decidir.
+
+Mas atenção ao corte errado: quem lê esta spec é uma sessão limpa, que **não** tem a conversa que a originou. Ela precisa do que tem de ser verdade e dos fatos para chegar lá. Corte a justificativa — nunca o insumo.

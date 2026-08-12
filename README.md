@@ -19,6 +19,14 @@ Disciplina pessoal para desenvolvimento assistido por IA: **Spec-Driven Developm
 
 `homologar` não roda por demanda. Cada demanda fecha em `verificar`; a suíte inteira roda uma vez, no fim — homologar cada spec contra a suíte completa é o custo que essa separação existe para evitar.
 
+Cada fase roda em **sessão limpa** e não invoca a seguinte. Quem encadeia é o roteador (`tooling/loop/`) — ou você, à mão.
+
+**Duas paradas por ciclo, e o número não cresce com o tamanho do lote:**
+
+```
+especificar × N → ┤aprovar o lote├ → (codificar → verificar) × N → homologar → ┤checklist├
+```
+
 Método completo, em uma página: [`metodologia-sle.md`](./metodologia-sle.md).
 
 ## As duas invariantes
@@ -27,6 +35,10 @@ Método completo, em uma página: [`metodologia-sle.md`](./metodologia-sle.md).
 2. **Quem escreve não atesta.** `codificar` escreve os próprios testes, então a suíte verde é autoatestada. O antídoto é a leitura limpa dentro de `verificar`: dez linhas de molde fixo, contexto que não participou, saída em arquivo.
 
 Não há hook de sessão, papel ativo nem fronteira de quem toca qual arquivo. Essas defesas custaram mais do que protegiam.
+
+## O alvo
+
+O método não mora no codebase que ele trabalha. Instala-se uma vez e opera sobre N codebases: o **alvo** é parâmetro de cada fase, e todo caminho — `docs/specs/`, `.sle/manifesto.md`, a suíte, o ref base — é relativo a ele. A exceção é [`dominios.md`](./dominios.md), que é do método e vale para todos.
 
 ## O que tem neste repo
 
@@ -40,9 +52,10 @@ Não há hook de sessão, papel ativo nem fronteira de quem toca qual arquivo. E
 ├── homologar/SKILL.md
 ├── .sle/manifesto.md           # domínios ativos + padrão de código + paths de produção
 ├── scripts/                    # instaladores (bash e PowerShell) + testes
-├── tooling/ci/                 # workflows de enforcement de repositório
+├── tooling/ci/                 # enforcement de repositório (2 workflows)
+├── tooling/loop/               # roteador do ciclo — núcleo puro + registro
 ├── propostas/                  # tese histórica (v1..v4) — leitura, não vigente
-└── docs/                       # specs, planos e guia de migração
+└── docs/                       # specs, vereditos, planos e guia de migração
 ```
 
 ## Instalação
@@ -66,11 +79,12 @@ Para escopo local, copie para `.claude/skills/` na raiz do projeto. No Claude.ai
 2. `/especificar` — o plano. Você aprova antes de qualquer código.
 3. `/codificar` — implementa e escreve os testes da demanda. Não roda a suíte completa.
 4. `/verificar` — roda o que a demanda toca e abre a leitura limpa. Sem pergunta arquitetural.
-5. Repita 2–4 por demanda.
+5. Repita 3–4 por demanda do lote.
 6. `/homologar`, no fim — suíte inteira e o checklist que só você responde.
 
 ## O que ainda falta, honestamente
 
+- **O roteador só tem o núcleo.** `roteador-lote` (lote, quarentena, dependência) está especificado e não implementado; o driver nativo não tem spec. Até lá, quem encadeia as fases é você.
 - **A v3 não rodou um ciclo inteiro ainda.** Ela nasceu do post-mortem da v2, e o teste é o próximo projeto real.
 - **`homologar` no fim do desenvolvimento pressupõe que existe um fim.** Em produto contínuo, "fim" provavelmente vira cadência — e essa cadência ainda não está definida.
 - **A leitura limpa custa um subagente por demanda.** É barata perto do que substituiu, mas não é grátis, e ainda não sei o piso de demanda em que ela deixa de valer.

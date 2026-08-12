@@ -10,6 +10,18 @@ Fim do desenvolvimento. Duas coisas: a suíte inteira, e as perguntas que só um
 
 **Não use isto por demanda.** Cada demanda fecha em `verificar`. Se você está aqui depois de uma spec só, está pagando o preço que a separação existe para evitar.
 
+## Insumos
+
+Você roda em sessão limpa, no fim do ciclo. Precisa receber:
+
+- **as specs do ciclo** e **seus vereditos** — é o conjunto que define o que "o ciclo" quer dizer; sem ele você mede um recorte arbitrário do repositório;
+- **o ref base do ciclo** — o ponto de partida de tudo, não o da última demanda;
+- **o alvo** — o codebase.
+
+Faltou um deles? **Pare e diga qual.** Um ciclo cujo contorno você inferiu produz relatório que parece completo e não é.
+
+Se o lote trouxe specs em quarentena, elas **não** entram: não fecharam, e homologar o que não fechou mistura duas medições.
+
 ## Passo 1 — A suíte completa é sua
 
 Rode tudo: unitário, integração, ponta a ponta, formatação, lint. Uma vez, aqui.

@@ -1,12 +1,23 @@
 ---
 name: codificar
-description: Use quando existe uma spec aprovada por `especificar` e o próximo passo é implementá-la. Escreve o código de produção e os testes unitários daquela demanda, seguindo o Clean Code e a arquitetura do repositório. Encaminha para `verificar`. NÃO use sem spec aprovada, nem para conserto de uma linha que não passou por spec.
+description: Use quando existe uma spec aprovada por `especificar` e o próximo passo é implementá-la. Escreve o código de produção e os testes unitários daquela demanda, seguindo o Clean Code e a arquitetura do repositório. Entrega e para: não invoca `verificar`. NÃO use sem spec aprovada, nem para conserto de uma linha que não passou por spec.
 disable-model-invocation: false
 ---
 
 # Codificar
 
 Implemente **tudo** que a spec pede, e nada além. Escreva os testes unitários **daquela demanda**.
+
+## Insumos
+
+Você roda em sessão limpa: não viu a spec ser escrita, não viu a conversa, não sabe o que foi discutido e descartado. Precisa receber:
+
+- **o caminho da spec aprovada**;
+- **o alvo** — o codebase onde o código vai morar.
+
+A spec é o contrato inteiro. Se ela não basta para implementar, isso não é falha sua e você não preenche a lacuna por conta: **pare e diga qual insumo falta.**
+
+Caminhos são relativos ao alvo. O padrão de código sai de `<alvo>/.sle/manifesto.md`.
 
 ## O que você entrega
 
@@ -57,4 +68,4 @@ Três blocos, e nada além:
 
 Não escreva documento de passagem, não escreva log de fase, não descreva como o código resolve o problema por dentro. O diff já conta o que mudou; quem verifica mede contra a spec, e a sua explicação só contaminaria essa medida.
 
-Entregue, e invoque `verificar`.
+Entregue e pare. **Não invoque `verificar` daqui** — ela roda em sessão nova, e é o roteador que a chama. Uma fase que emenda na seguinte dentro da mesma sessão carrega o próprio raciocínio junto, que é exatamente o que a sessão limpa existe para cortar.

@@ -13,6 +13,8 @@ Rigor de engenharia na velocidade da IA. Quatro skills, duas invariantes, um art
 
 `homologar` não roda por demanda. Cada demanda fecha em `verificar`; a suíte inteira roda uma vez, no fim. Homologar cada spec contra a suíte completa é o custo que essa separação existe para evitar.
 
+Cada fase roda em **sessão limpa** e não invoca a seguinte. Quem encadeia é o roteador — ou você, à mão. Uma fase que emenda na próxima dentro da mesma sessão leva o próprio raciocínio junto, e é esse vazamento que a separação existe para cortar.
+
 ## As duas invariantes
 
 **1. O contrato precede a construção.** A spec é escrita antes de existir contexto de implementação. Uma spec escrita por quem já sabe como vai construir deixa de ser contrato e vira descrição: os critérios se moldam ao que é fácil, e nenhuma verificação posterior detecta isso — quem verifica confere a entrega contra o contrato, e o contrato já nasceu torto.
@@ -26,10 +28,10 @@ Nada mais é invariante. Não há papel bloqueado por hook, não há marker-file
 Um subagente de contexto limpo, que não participou, lê só os artefatos e escreve em arquivo:
 
 ```
-Leia docs/specs/<nome>.md e o diff de <base>..HEAD.
-Para cada critério, diga: atendido / não atendido / não verificável, e por quê.
+Leia <alvo>/docs/specs/<nome>.md e o diff de <base>..HEAD.
+Para cada critério, uma linha "- **<ID>** — atendido|não atendido|não verificável", e o porquê depois.
 Não sugira correção. Não leia mais nada.
-Saída em docs/specs/<nome>-veredito.md.
+Saída em <alvo>/docs/specs/<nome>-veredito.md.
 ```
 
 Três regras, e existem porque o desenho vaza sem elas:
@@ -44,7 +46,16 @@ Custa dez linhas. É o único ritual que se pagou.
 
 **O veredito.** Só ele.
 
-Não há passagem entre fases, log de fase, mapa de cobertura nem registro de pressão. O diff conta o que mudou; a saída da suíte conta o estado; a conversa carrega o resto. Documentação sobre o trabalho não é trabalho — e, pior, dá credibilidade a afirmações que ninguém verificou.
+Não há passagem entre fases, log de fase, mapa de cobertura nem registro de pressão. Documentação sobre o trabalho não é trabalho — e, pior, dá credibilidade a afirmações que ninguém verificou.
+
+### Estado é campo. Explicação continua morta.
+
+Sessão limpa não herda conversa. O que a conversa carregava de graça precisa de outro lugar — e a distinção entre o que merece esse lugar e o que não merece é decidível:
+
+- **Estado** é fato: o ref base do diff, quais specs pertencem a este ciclo, qual é o alvo, qual insumo falta. Pode estar errado e se confere contra a realidade. Vira **campo** — insumo declarado na entrada da fase.
+- **Explicação** é leitura: como o código resolve o problema, por que aquele padrão, o que foi difícil. Não se confere contra nada. Continua fora.
+
+O teste: **se o item tem um valor que se confere, é campo; se tem uma leitura, é prosa.** A passagem da v2 reprovava nesse teste em cada frase — é por isso que a sessão limpa não a traz de volta.
 
 ## O teto de 15 critérios
 
@@ -90,8 +101,24 @@ Quem lê já tem o contexto. O que não pode faltar é o que precisa ser **verda
 
 Arquitetura é julgamento humano. As skills calculam **prontidão**; nunca **aceitação**.
 
-Dois pontos param para o humano: a spec aprovada, antes de `codificar`; e o checklist de `homologar`, no fim. `verificar` não faz pergunta arquitetural — se fizesse, faria trinta vezes por ciclo, e ninguém responde trinta.
+**Duas paradas por ciclo, e o número não cresce com o tamanho do lote:**
+
+```
+especificar × N → ┤aprovar o lote├ → (codificar → verificar) × N → homologar → ┤checklist├
+```
+
+O lote é o que mantém o número em dois. As N specs são escritas antes de qualquer código, e as perguntas que sobrarem sobem todas juntas no mesmo gate. Aprovar de uma em uma devolveria N+1 interrupções — o custo que o loop existe para eliminar.
+
+`verificar` não faz pergunta arquitetural. Se fizesse, faria trinta vezes por ciclo, e ninguém responde trinta.
+
+Fora das duas paradas planejadas, o loop só interrompe por exceção: critério `não verificável`, que é defeito de spec; teto de tentativas estourado; ou insumo que falta. Spec bloqueada por insumo entra em quarentena junto com as que dependem dela, e o resto do lote segue — problema local não vira parada global.
+
+## O alvo
+
+O método não mora no codebase que ele trabalha. Instala-se uma vez, num diretório, e opera sobre N codebases: o **alvo** é parâmetro de cada fase, e todo caminho — `docs/specs/`, `.sle/manifesto.md`, a suíte, o ref base — é relativo a ele.
+
+A exceção é `dominios.md`: o catálogo é do método, e é o mesmo para todo alvo. É essa separação que permite ao alvo deixar de ser um diretório local e virar outra coisa depois, sem tocar em nenhuma fase.
 
 ## Por que é replicável
 
-Nada aqui depende de plataforma: são quatro prompts, uma leitura de contexto limpo e um arquivo de veredito. Roda em qualquer harness que saiba abrir um subagente — e, no limite, roda com duas pessoas e um editor de texto.
+Nada aqui depende de plataforma: são quatro prompts, uma leitura de contexto limpo e um arquivo de veredito. Roda em qualquer harness que saiba abrir uma sessão limpa — e, no limite, roda com duas pessoas e um editor de texto.
