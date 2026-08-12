@@ -730,6 +730,8 @@ def main(argv=None) -> int:
         help="arquivo de pedidos, relativo ao alvo (default: pedidos.md)",
     )
 
+    subcomandos.add_parser("console", help="modo interativo")
+
     quadro = subcomandos.add_parser(
         "painel", help="o que cada repositório espera de você"
     )
@@ -769,6 +771,14 @@ def main(argv=None) -> int:
     )
 
     args = analisador.parse_args(argv)
+    import console
+
+    if args.subcomando == "console":
+        return console.rodar()
+    if not args.subcomando and console.e_terminal():
+        # Terminal abre o console; sem terminal (pipe, CI, script) mantém a
+        # ajuda e a saída 2, que é o que o S3 protegia.
+        return console.rodar()
     if args.subcomando == "repo":
         return _comando_repo(args, repo)
     if args.subcomando == "painel":
