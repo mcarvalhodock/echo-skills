@@ -105,6 +105,18 @@ class TestExecucaoRealSkillsLocal:
         assert (preview / "compose.yml").is_file()
 
 
+class TestAlvoInexistente:
+    def test_cria_o_diretorio_alvo(self, fake_target: Path) -> None:
+        """A6 — paridade: o lado ps1 também aceita alvo que ainda não existe."""
+        assert not fake_target.exists()
+        result = run_ps1([
+            "-Components", "ci",
+            "-TargetRepo", str(fake_target),
+        ])
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert fake_target.is_dir()
+
+
 class TestIdempotencia:
     def test_segunda_execucao_emite_skip(self, fake_target: Path) -> None:
         args = [

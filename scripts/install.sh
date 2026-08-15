@@ -96,24 +96,23 @@ EOF
 }
 
 test_python_available() {
-    local py_bin=''
-    if command -v python3 >/dev/null 2>&1; then
-        py_bin='python3'
-    elif command -v python >/dev/null 2>&1; then
-        py_bin='python'
-    else
-        return 1
-    fi
-    local version_output
-    version_output=$("$py_bin" --version 2>&1) || return 1
-    if [[ ! "$version_output" =~ Python\ ([0-9]+)\.([0-9]+) ]]; then
-        return 1
-    fi
-    local major="${BASH_REMATCH[1]}"
-    local minor="${BASH_REMATCH[2]}"
-    if (( major > 3 )) || { (( major == 3 )) && (( minor >= 11 )); }; then
-        return 0
-    fi
+    # Cada candidato e testado ate um responder versao valida, em vez de parar no
+    # primeiro que existe no PATH: no Windows, 'python3' costuma ser o atalho da
+    # Microsoft Store, que esta no PATH, nao roda, e imprime instrucao de
+    # instalacao. Parar nele desabilitava o 'ci' com um Python 3.12 ao lado.
+    local py_bin version_output major minor
+    for py_bin in python3 python; do
+        command -v "$py_bin" >/dev/null 2>&1 || continue
+        version_output=$("$py_bin" --version 2>&1) || continue
+        if [[ ! "$version_output" =~ Python\ ([0-9]+)\.([0-9]+) ]]; then
+            continue
+        fi
+        major="${BASH_REMATCH[1]}"
+        minor="${BASH_REMATCH[2]}"
+        if (( major > 3 )) || { (( major == 3 )) && (( minor >= 11 )); }; then
+            return 0
+        fi
+    done
     return 1
 }
 
@@ -587,6 +586,11 @@ generate_setup_guide() {
     template="${template//\{\{CI_INSTALLED\}\}/$ci_installed}"
     template="${template//\{\{ARTIFACTS_LIST\}\}/$artifacts_list}"
     template="${template//\{\{UNINSTALL_LIST\}\}/$artifacts_list}"
+
+    # O alvo pode nao existir ainda: instalar num repositorio que sera criado e
+    # uso legitimo, e o install.ps1 ja aceitava. Sem isto o redirecionamento
+    # abaixo falha com "No such file or directory" e o instalador sai com 1.
+    mkdir -p "$ARG_TARGET_REPO"
 
     printf '%s\n' "$template" > "$dest_path"
     write_step action "generated $dest_path"

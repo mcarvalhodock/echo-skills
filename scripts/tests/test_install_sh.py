@@ -116,6 +116,57 @@ class TestCiInstall:
             assert "continue-on-error: true" in content
 
 
+class TestAlvoInexistente:
+    def test_cria_o_diretorio_alvo(self, fake_target: Path) -> None:
+        """A1 — o alvo pode não existir ainda; o instalador o cria."""
+        assert not fake_target.exists()
+        run_sh([
+            "--components", "ci",
+            "--target-repo", str(fake_target),
+        ])
+        assert fake_target.is_dir()
+
+    def test_sai_com_zero_em_alvo_inexistente(self, fake_target: Path) -> None:
+        """A2 — criar o alvo não é erro; o código de saída é 0."""
+        assert not fake_target.exists()
+        result = run_sh([
+            "--components", "ci",
+            "--target-repo", str(fake_target),
+        ])
+        assert result.returncode == 0, result.stdout + result.stderr
+
+
+class TestDeteccaoDePython:
+    def test_ignora_python3_que_nao_reporta_versao(
+        self, fake_target: Path, tmp_path: Path
+    ) -> None:
+        """A7 — estar no PATH não é executar: o candidato quebrado é descartado.
+
+        Imita o atalho da Microsoft Store, que existe no PATH, sai com erro e
+        imprime instrução de instalação em vez de versão.
+        """
+        stub_dir = tmp_path / "stub"
+        stub_dir.mkdir()
+        stub = stub_dir / "python3"
+        stub.write_text(
+            "#!/bin/sh\n"
+            "echo 'Python nao foi encontrado; execute sem argumentos para instalar'\n"
+            "exit 9009\n",
+            encoding="utf-8",
+        )
+        stub.chmod(0o755)
+
+        result = run_sh(
+            ["--components", "ci", "--target-repo", str(fake_target)],
+            prefixo_de_path=stub_dir,
+        )
+
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert (fake_target / ".github" / "workflows").is_dir(), (
+            "o 'ci' foi desabilitado por causa do python3 quebrado"
+        )
+
+
 class TestSetupGuide:
     def test_setup_guide_gerado(self, fake_target: Path) -> None:
         result = run_sh([
