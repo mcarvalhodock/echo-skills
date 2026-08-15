@@ -8,6 +8,34 @@ from pathlib import Path
 import _helpers
 
 
+class TestBashAoLadoDoGit:
+    def test_deriva_do_git_em_prefixo_nao_padrao(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """Fallback derivado, não fixado: um git fora de C:\\Program Files.
+
+        Imita um Scoop/Chocolatey/portátil, e a profundidade real do Git for
+        Windows, onde o executável mora em `mingw64/bin/`.
+        """
+        raiz = tmp_path / "ferramentas" / "Git"
+        (raiz / "mingw64" / "bin").mkdir(parents=True)
+        (raiz / "bin").mkdir()
+        git = raiz / "mingw64" / "bin" / "git.exe"
+        git.write_text("", encoding="utf-8")
+        bash = raiz / "bin" / "bash.exe"
+        bash.write_text("", encoding="utf-8")
+
+        monkeypatch.setattr(_helpers.shutil, "which", lambda _: str(git))
+
+        assert str(bash) in _helpers._bash_ao_lado_do_git()
+
+    def test_sem_git_no_path_devolve_lista_vazia(self, monkeypatch) -> None:
+        """Sem âncora não há derivação — e isso não é exceção."""
+        monkeypatch.setattr(_helpers.shutil, "which", lambda _: None)
+
+        assert _helpers._bash_ao_lado_do_git() == []
+
+
 class TestFindWorkingBash:
     def test_descarta_candidato_que_nao_executa(
         self, tmp_path: Path, monkeypatch

@@ -24,6 +24,33 @@ def _find_shell(candidates: tuple[str, ...]) -> str | None:
     return None
 
 
+def _bash_ao_lado_do_git() -> list[str]:
+    """Bash que acompanha a instalação do git, derivado — nunca fixado.
+
+    Endereço fixo (`C:\\Program Files\\Git\\...`) só vale para a instalação
+    padrão do Git for Windows: quebra em Scoop, Chocolatey, git portátil ou
+    outro drive. E quebraria em silêncio, porque este ramo só é alcançado
+    quando o `which` já falhou — a suíte voltaria a pular testes dizendo "bash
+    não disponível", que é o defeito que este repositório acabou de quitar.
+
+    O git está no PATH em qualquer máquina que use este repositório, então ele
+    é a âncora. Subir pelos pais, e não por índice fixo, porque a profundidade
+    varia: no Git for Windows o executável mora em `mingw64/bin/git.exe`.
+    """
+    git = shutil.which("git")
+    if not git:
+        return []
+    achados: list[str] = []
+    for pai in Path(git).resolve().parents:
+        for relativo in ("bin/bash.exe", "usr/bin/bash.exe", "bin/bash"):
+            candidato = pai / relativo
+            if candidato.exists():
+                achados.append(str(candidato))
+        if achados:
+            break
+    return achados
+
+
 def _find_working_bash() -> str | None:
     """Primeiro bash do PATH que de fato executa.
 
@@ -33,15 +60,7 @@ def _find_working_bash() -> str | None:
     "bash não disponível", escondendo por um ciclo um defeito do install.sh que
     reprovava em qualquer sistema. Aqui o candidato é testado, não presumido.
     """
-    candidatos = [shutil.which("bash")]
-    candidatos += [
-        str(caminho)
-        for caminho in (
-            Path(r"C:\Program Files\Git\bin\bash.exe"),
-            Path(r"C:\Program Files\Git\usr\bin\bash.exe"),
-        )
-        if caminho.exists()
-    ]
+    candidatos = [shutil.which("bash")] + _bash_ao_lado_do_git()
     for candidato in candidatos:
         if not candidato:
             continue
