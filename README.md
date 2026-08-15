@@ -6,7 +6,7 @@ Disciplina pessoal para desenvolvimento assistido por IA: **Spec-Driven Developm
 >
 > A v3 corta o que não se pagou. O resultado aterrissa perto do ECHO v1 (`especificar` / `planejar` / `homologar`), guardando a única coisa que a v2 acertou de verdade: **a atestação por leitura limpa**.
 >
-> O que cresceu depois foi **fora** do método: `tooling/loop/` automatiza o encadeamento entre as fases sem acrescentar nenhuma regra a elas. As quatro skills continuam sendo quatro prompts, e o loop continua sendo dispensável — dá para rodar tudo à mão.
+> Houve uma automação de encadeamento entre as fases, fora do método. Ela saiu: era dispensável por construção, e encadear à mão bastou. As skills continuam sendo prompts.
 
 ---
 
@@ -21,7 +21,7 @@ Disciplina pessoal para desenvolvimento assistido por IA: **Spec-Driven Developm
 
 `homologar` não roda por demanda. Cada demanda fecha em `verificar`; a suíte inteira roda uma vez, no fim — homologar cada spec contra a suíte completa é o custo que essa separação existe para evitar.
 
-Cada fase roda em **sessão limpa** e não invoca a seguinte. Quem encadeia é o loop (`tooling/loop/`) — ou você, à mão.
+Cada fase roda em **sessão limpa** e não invoca a seguinte. Quem encadeia é você, à mão.
 
 **Duas paradas por ciclo, e o número não cresce com o tamanho do lote:**
 
@@ -60,11 +60,8 @@ O método não mora no codebase que ele trabalha. Instala-se uma vez e opera sob
 ├── prototipar-frontend/SKILL.md # acessória: roda ANTES do ciclo, não é fase dele
 ├── prototipar-frontend/preview/ # docker que serve a tela quando o alvo não serve
 ├── .sle/manifesto.md           # domínios ativos + padrão de código + paths de produção
-├── scripts/sle, sle.ps1        # a ferramenta
 ├── scripts/install.*           # instaladores (bash e PowerShell) + testes
 ├── tooling/ci/                 # enforcement de repositório (2 workflows)
-├── tooling/loop/               # o loop — decisão pura + driver ([guia](./tooling/loop/README.md))
-│                               # casa, cadastro, painel, console e auditoria
 ├── propostas/                  # tese histórica (v1..v4) — leitura, não vigente
 └── docs/                       # specs, vereditos, planos e guia de migração
 ```
@@ -84,9 +81,7 @@ cp -r especificar codificar verificar homologar ~/.claude/skills/
 
 Para escopo local, copie para `.claude/skills/` na raiz do projeto. No Claude.ai, zipe cada pasta e suba em Settings → Features → Skills.
 
-O `sle` não precisa de instalação: Python 3.10+, sem dependência externa, rodando do clone. Mas ele **depende das skills instaladas**, porque cita cada uma pelo nome — e avisa quando a instalada divergir da do clone, que é erro fácil de cometer e caro de perceber.
-
-A ferramenta guarda o que você escreveu — hoje só o cadastro de repositórios — em `~/.sle/`, ou onde `SLE_CASA` apontar. O estado do trabalho não vai para lá: ele é derivado dos artefatos de cada alvo, toda vez.
+Conferir o que já está instalado vale a pena antes de julgar o método: o instalador **pula** o que já existe, e uma skill defasada no destino se comporta como uma regra que você não escreveu. Use `--force` para sobrescrever.
 
 ## No dia a dia
 
@@ -97,24 +92,7 @@ A ferramenta guarda o que você escreveu — hoje só o cadastro de repositório
 5. Repita 3–4 por demanda do lote.
 6. `/homologar`, no fim — suíte inteira e o checklist que só você responde.
 
-Nada disso precisa ser digitado fase a fase. É para isso que existe o `sle`:
-
-```bash
-sle repo add api ~/projeto     # registra o repositório, uma vez
-sle painel                     # o que cada projeto espera de você
-sle pedir --alvo api           # conversa, escreve as specs, para
-                               # você lê e aprova
-sle rodar --alvo api --specs a,b   # headless: codificar, verificar,
-                                   # auditar todos os critérios, homologar
-```
-
-Ou `sle` puro, que abre um console onde você seleciona um repositório e trabalha de dentro.
-
-`pedir` lê `<alvo>/pedidos.md` — um `##` por demanda, o cabeçalho é o nome da spec — e abre uma sessão por pedido. `rodar` percorre o lote, commita cada tentativa de forma marcada, **relê todos os critérios do alvo contra o código atual**, roda a suíte e para no checklist. Comece pelo `--seco`.
-
-Sai com **0** em gate planejado, **não-zero** em exceção — dá para encadear sem ler a saída. Guia completo (flags, monorepo, outro agente, o que cada parada significa, como limpar o histórico): [`tooling/loop/README.md`](./tooling/loop/README.md).
-
-**Sem API key e sem SDK.** O loop fala com o CLI do agente por processo, um por fase. É isso que faz trocar de agente não mudar uma linha do roteamento.
+Cada fase é digitada por você, em sessão nova. Já houve automação de encadeamento aqui; ela saiu porque o custo dela não se pagou contra digitar quatro comandos. O registro do que foi construído e por que foi recusado está em `docs/specs/loop-*.md` e `docs/specs/sle-*.md`.
 
 ## O que ainda falta, honestamente
 

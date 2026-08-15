@@ -1,6 +1,0 @@
-#!/usr/bin/env sh
-# Invólucro do loop SLE. Três linhas em vez de um pacote: o repositório não tem
-# empacotamento, e criar um para isto traria versionamento e ciclo de release
-# que ninguém pediu.
-CLONE="$(cd "$(dirname "$0")/.." && pwd)"
-exec python "$CLONE/tooling/loop/driver.py" "$@"

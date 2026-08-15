@@ -25,7 +25,7 @@ Isto é uma declaração, não uma pendência: as próximas specs deste reposit�
 
 - Git (repositório versionado, branch de trabalho: `refatoracao/spec-loop-engineering`).
 - Editor Markdown (declaração pura de método continua sendo o núcleo do repositório).
-- Python 3.12 + pytest (scripts de CI em `tooling/ci/scripts/` e o roteador do loop em `tooling/loop/`).
+- Python 3.12 + pytest (scripts de CI em `tooling/ci/scripts/`).
 - Shell (Windows/PowerShell no ambiente do autor; scripts também disponíveis em `.sh` quando existirem, para portabilidade).
 - GitHub Actions (ou equivalente) para CI, com templates em `tooling/ci/` que os repositórios consumidores podem adaptar.
 
@@ -65,19 +65,6 @@ Lidos por `pr_spec_diff`. Aqui, "produção" é o que outros repositórios conso
 - `^tooling/`
 - `^scripts/`
 - `^(especificar|codificar|verificar|homologar)/`
-
-## Loop
-
-`tooling/loop/` — o `sle`: decide a próxima transição do ciclo a partir do estado observável, para que o humano deixe de ser o barramento de mensagens entre as fases.
-
-- **Núcleo puro**, sem disco nem relógio, com teste estrutural que reprova import proibido: `roteador.py`, `veredito.py`, `lote.py`, `dependencia.py`, `secoes.py`, `molde.py`.
-- **Casca impura**: `driver.py` (o laço e o CLI), `invocacao.py`, `git_alvo.py`, `registro.py`, `auditoria.py`, `casa.py`, `repos.py`, `painel.py`, `console.py`, `pedidos.py`, `skills_instaladas.py`.
-- Ferramenta em `scripts/sle` e `scripts/sle.ps1`; casa em `~/.sle/` (ou `SLE_CASA`), guardando só dado autorado.
-- Specs em `docs/specs/roteador-*.md`, `loop-*.md` e `sle-*.md`.
-
-O loop mora **com o método**, não nos repositórios-alvo: ele recebe o alvo por parâmetro e opera sobre N codebases. O instalador não o copia para o consumidor, e isso é deliberado.
-
-Guia operacional em [`tooling/loop/README.md`](../tooling/loop/README.md).
 
 ## Nível de rigor esperado
 
