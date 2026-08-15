@@ -80,7 +80,7 @@ Mais a linha do veredito. **O estado da demanda você pode declarar** — atendi
 
 ## Se o veredito aponta lacuna
 
-**A rota não é sua.** Você produz o veredito e para; quem lê a classificação e decide o próximo passo é o roteador, por tabela fixa:
+**A rota não é sua.** Você produz o veredito e para; quem lê a classificação e decide o próximo passo é o `orquestrar`, por tabela fixa:
 
 - **`não atendido`** → volta para `codificar`, automático, até o teto de tentativas.
 - **`não verificável`** → sobe para o humano. Isso é defeito de spec, não de código, e mais uma volta de `codificar` só queima tentativa contra um critério que ninguém consegue medir.

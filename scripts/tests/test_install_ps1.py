@@ -29,10 +29,11 @@ class TestHelpAndInvocation:
         assert result.returncode != 0
 
     def test_ajuda_anuncia_a_contagem_certa_de_skills(self) -> None:
-        """P15 — a ajuda para de dizer 4 e passa a nomear a acessória."""
+        """G5 — a contagem acompanha a lista; hoje são seis."""
         result = run_ps1(["-Help"])
-        assert "4 skills" not in result.stdout
-        assert "5 skills" in result.stdout
+        assert "5 skills" not in result.stdout
+        assert "6 skills" in result.stdout
+        assert "orquestrar" in result.stdout
         assert "prototipar-frontend" in result.stdout
 
 
@@ -88,6 +89,18 @@ class TestExecucaoRealSkillsLocal:
         assert result.returncode == 0
         skill_dir = fake_target / ".claude" / "skills" / "prototipar-frontend"
         assert skill_dir.is_dir(), "prototipar-frontend não foi instalada"
+        assert (skill_dir / "SKILL.md").is_file()
+
+    def test_instala_o_orquestrador(self, fake_target: Path) -> None:
+        """G4 — `orquestrar` entra na mesma lista das outras."""
+        result = run_ps1([
+            "-Components", "skills",
+            "-Scope", "local",
+            "-TargetRepo", str(fake_target),
+        ])
+        assert result.returncode == 0
+        skill_dir = fake_target / ".claude" / "skills" / "orquestrar"
+        assert skill_dir.is_dir(), "orquestrar não foi instalada"
         assert (skill_dir / "SKILL.md").is_file()
 
     def test_instala_o_preview_junto_da_skill(self, fake_target: Path) -> None:

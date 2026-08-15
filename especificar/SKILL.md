@@ -8,7 +8,7 @@ disable-model-invocation: false
 
 Transforme a demanda num **plano específico**: o que precisa ser verdade no fim, e em que ordem construir. Um arquivo, `<alvo>/docs/specs/<nome>.md`.
 
-Você não escreve código e não escreve teste. Terminada a spec, **você para**: quem aprova é o humano, e quem invoca `codificar` depois é o roteador.
+Você não escreve código e não escreve teste. Terminada a spec, **você para**: quem aprova é o humano, e quem invoca `codificar` depois é o `orquestrar`.
 
 ## Insumos
 
@@ -99,8 +99,8 @@ A régua corta nos dois sentidos de propósito. Sem o primeiro lado, tudo sobe e
 ## Depende de
 [as specs que precisam estar fechadas antes desta; "nenhuma" se for o caso.
 Só isso, e só nome de spec: quem depende DESTA não se declara aqui, e citar
-tipo, módulo ou arquivo aqui também não. O roteador lê esta seção como grafo,
-e a relação invertida vira ciclo — que trava o lote em vez de ordená-lo.]
+tipo, módulo ou arquivo aqui também não. O `orquestrar` lê esta seção como
+grafo, e a relação invertida vira ciclo — que trava o lote em vez de ordená-lo.]
 
 ## Critérios
 - [ ] **C1** `[domínio]` — ...

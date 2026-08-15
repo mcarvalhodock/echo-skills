@@ -71,8 +71,9 @@ USAGE:
     ./install.sh --components <list> [options]       (non-interactive)
 
 COMPONENTS:
-    skills   Copy the 5 skills: the 4 of the cycle (especificar, codificar,
-             verificar, homologar) + the accessory prototipar-frontend
+    skills   Copy the 6 skills: the 4 of the cycle (especificar, codificar,
+             verificar, homologar) + orquestrar, which drives them, + the
+             accessory prototipar-frontend
     ci       Copy workflows + CI scripts to the target repository
     all      skills + ci
 
@@ -120,7 +121,7 @@ read_interactive_components() {
     echo ""
     echo "SLE Installer - interactive mode"
     echo "Choose what to install:"
-    echo "  1) skills only (the 5 SLE skills)"
+    echo "  1) skills only (the 6 SLE skills)"
     echo "  2) skills + CI (recommended for first repository)"
     echo "  3) skills + CI (full setup)"
     echo "  4) ci only"
@@ -347,9 +348,9 @@ install_skills() {
     destination=$(get_skills_destination)
     write_step info "installing skills to: $destination (scope=$ARG_SCOPE)"
 
-    # the four cycle skills, then the accessories - accessories run before the
-    # cycle and are installed the same way, so one list covers both
-    local skills=(especificar codificar verificar homologar prototipar-frontend)
+    # the four cycle skills, then orquestrar (which drives them), then the
+    # accessories - none of them install differently, so one list covers all
+    local skills=(especificar codificar verificar homologar orquestrar prototipar-frontend)
     for skill in "${skills[@]}"; do
         if ! copy_skill_folder "$skill" "$SOURCE_ROOT" "$destination"; then
             write_step error "failed to install skill '$skill' - aborting skills phase"

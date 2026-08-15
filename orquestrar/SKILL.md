@@ -51,7 +51,7 @@ Não há hook nem bloqueio impedindo. É texto, e é deliberado que seja: as def
 | classificação | destino |
 |---|---|
 | `atendido` | segue |
-| `não atendido` | volta para `codificar` |
+| `não atendido` | volta para `codificar`, até o teto |
 | `não verificável` | sobe para o humano |
 
 `não verificável` sobe porque é **defeito de spec, não de código**: mais uma volta de `codificar` queima esforço contra um critério que ninguém consegue medir. Corrigir o critério é decisão de quem aprovou a spec.
@@ -62,12 +62,60 @@ Não há hook nem bloqueio impedindo. É texto, e é deliberado que seja: as def
 
 **As duas paradas planejadas do ciclo são as únicas paradas humanas previstas:** o gate que aprova a spec, e a homologação no fim.
 
-Qualquer outra parada é **exceção**, e exceção precisa de motivo nomeado. As que existem:
-
-- critério `não verificável`;
-- insumo que falta.
+Qualquer outra parada é **exceção**, e exceção precisa de motivo nomeado. As quatro que existem estão em "O teto, e as paradas por exceção", mais abaixo — e são só aquelas.
 
 Parar fora disso é devolver ao humano o trabalho que você existe para absorver.
+
+## O lote: ler tudo antes de despachar qualquer coisa
+
+**Recebendo mais de uma spec aprovada, leia todas antes de despachar a primeira.** Uma spec que contradiz outra custa uma conversa enquanto é papel, e custa código escrito e desfeito depois que a primeira rodou.
+
+**Divergência é um par de critérios, de specs diferentes, que incidem sobre o mesmo ponto do código.** Isso é o caso comum num lote, e quase nunca é problema.
+
+O que separa os dois casos é uma pergunta só:
+
+> **Existe implementação que atenda os dois critérios?**
+
+- **Existe** — não há contradição, há tensão aparente. **Prossiga, e registre qual é a implementação que atende os dois.** Resolução não anotada é decisão invisível: `codificar` vai reencontrar a mesma tensão sem saber que ela já foi resolvida.
+- **Não existe nenhuma** — atender um necessariamente reprova o outro. **Pare e suba para o humano**, nomeando **as duas specs e o par de critérios**. Reescrever uma delas é decisão de quem as aprovou; não é sua.
+
+**A leitura do lote só alcança contradição escrita nas specs**, e não substitui o veredito de cada demanda. Contradição que só aparece no código não é visível aqui — a rede para ela continua sendo `verificar`, uma demanda por vez. Ler o lote não é certificar que ele é coerente.
+
+## O que sobe, e o que segue
+
+Fora da divergência, a régua é a mesma de `especificar`, aplicada à condução:
+
+> Se prosseguir exigiria **supor** algo sobre a intenção de alguém — preferência, prioridade, apetite de risco —, **pare**. Se a resposta é derivável do codebase, do manifesto ou das specs, é **corrigível**: siga.
+
+**O que é corrigível prossegue sem parar, com a recomendação registrada.** Registrar é o que mantém a decisão auditável depois; parar para pedir permissão sobre o derivável é devolver ao humano o trabalho que você existe para absorver.
+
+Ao prosseguir, despache a fase que corresponde ao **tipo** do problema:
+
+| o problema é | a fase é |
+|---|---|
+| código não faz o que o critério pede | `codificar` |
+| critério atendido, falta medir | `verificar` |
+| o ciclo acabou e falta a suíte completa | `homologar` |
+| o critério está errado ou não é mensurável | nenhuma — sobe |
+
+Mandar um problema de spec para `codificar` queima esforço contra um critério que ninguém consegue medir. O tipo do problema decide o contexto, não a ordem do ciclo.
+
+## O teto, e as paradas por exceção
+
+**Duas tentativas por critério `não atendido`.** Reprovou, volta para `codificar` uma vez; reprovou de novo, **pare e suba**.
+
+Duas é o menor número que distingue erro de implementação de critério ambíguo: a primeira reprovação pode ser código, a segunda pelo mesmo motivo raramente é. Por isso a segunda sobe como **suspeita de spec ambígua**, não como código ruim.
+
+As paradas por exceção são estas, e não se inventa uma quinta:
+
+- critério `não verificável` — defeito de spec;
+- teto de tentativas estourado;
+- insumo que falta;
+- divergência sem implementação que atenda os dois critérios.
+
+**Spec bloqueada por insumo entra em quarentena junto com as que dependem dela, e o resto do lote segue.** Problema local não vira parada global — e specs em quarentena não entram na homologação, porque não fecharam.
+
+Inventar exceção fora dessas quatro é o que transforma "para quando precisa" em "para sempre que tem dúvida".
 
 ## Onde termina, e o que se repete
 
@@ -90,8 +138,11 @@ Por isso nenhuma ferramenta é obrigatória aqui: amarrar uma quebraria o métod
 ## Antes de devolver
 
 - [ ] A spec estava aprovada antes de você despachar qualquer coisa.
+- [ ] Sendo lote, todas as specs foram lidas antes do primeiro despacho.
+- [ ] Cada divergência foi classificada pelo teste, e a resolvível teve a implementação registrada.
 - [ ] Cada fase recebeu os insumos da tabela, e nada além deles.
 - [ ] Você não escreveu código nem teste.
 - [ ] Cada `não atendido` voltou para `codificar`; cada `não verificável` subiu.
-- [ ] Nenhuma parada humana aconteceu fora das duas planejadas, sem exceção nomeada.
+- [ ] Nenhum critério voltou para `codificar` mais de duas vezes.
+- [ ] Toda parada fora das duas planejadas nomeou uma das quatro exceções.
 - [ ] A demanda está com o humano, para homologar.

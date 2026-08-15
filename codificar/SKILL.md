@@ -68,4 +68,4 @@ Três blocos, e nada além:
 
 Não escreva documento de passagem, não escreva log de fase, não descreva como o código resolve o problema por dentro. O diff já conta o que mudou; quem verifica mede contra a spec, e a sua explicação só contaminaria essa medida.
 
-Entregue e pare. **Não invoque `verificar` daqui** — ela roda em sessão nova, e é o roteador que a chama. Uma fase que emenda na seguinte dentro da mesma sessão carrega o próprio raciocínio junto, que é exatamente o que a sessão limpa existe para cortar.
+Entregue e pare. **Não invoque `verificar` daqui** — ela roda em sessão nova, e é o `orquestrar` que a chama. Uma fase que emenda na seguinte dentro da mesma sessão carrega o próprio raciocínio junto, que é exatamente o que a sessão limpa existe para cortar.

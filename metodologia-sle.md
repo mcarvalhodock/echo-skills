@@ -13,7 +13,7 @@ Rigor de engenharia na velocidade da IA. Quatro skills, duas invariantes, um art
 
 `homologar` não roda por demanda. Cada demanda fecha em `verificar`; a suíte inteira roda uma vez, no fim. Homologar cada spec contra a suíte completa é o custo que essa separação existe para evitar.
 
-Cada fase roda em **sessão limpa** e não invoca a seguinte. Quem encadeia é o roteador — ou você, à mão. Uma fase que emenda na próxima dentro da mesma sessão leva o próprio raciocínio junto, e é esse vazamento que a separação existe para cortar.
+Cada fase roda em **sessão limpa** e não invoca a seguinte. Quem encadeia é o `orquestrar` — ou você, à mão. Uma fase que emenda na próxima dentro da mesma sessão leva o próprio raciocínio junto, e é esse vazamento que a separação existe para cortar.
 
 ## As duas invariantes
 
@@ -111,7 +111,7 @@ O lote é o que mantém o número em dois. As N specs são escritas antes de qua
 
 `verificar` não faz pergunta arquitetural. Se fizesse, faria trinta vezes por ciclo, e ninguém responde trinta.
 
-Fora das duas paradas planejadas, o loop só interrompe por exceção: critério `não verificável`, que é defeito de spec; teto de tentativas estourado; ou insumo que falta. Spec bloqueada por insumo entra em quarentena junto com as que dependem dela, e o resto do lote segue — problema local não vira parada global.
+Fora das duas paradas planejadas, o ciclo só interrompe por exceção: critério `não verificável`, que é defeito de spec; teto de tentativas estourado; insumo que falta; ou **divergência entre specs** — duas que se contradizem a ponto de nenhuma implementação atender aos dois critérios. Spec bloqueada por insumo entra em quarentena junto com as que dependem dela, e o resto do lote segue — problema local não vira parada global.
 
 ## O alvo
 

@@ -92,8 +92,9 @@ function Show-Help {
     Write-Host "    .\install.ps1 -Components <list> [options]       (non-interactive)"
     Write-Host ""
     Write-Host "COMPONENTS:"
-    Write-Host "    skills   Copy the 5 skills: the 4 of the cycle (especificar, codificar,"
-    Write-Host "             verificar, homologar) + the accessory prototipar-frontend"
+    Write-Host "    skills   Copy the 6 skills: the 4 of the cycle (especificar, codificar,"
+    Write-Host "             verificar, homologar) + orquestrar, which drives them, + the"
+    Write-Host "             accessory prototipar-frontend"
     Write-Host "    ci       Copy workflows + CI scripts to the target repository"
     Write-Host "    all      skills + ci"
     Write-Host ""
@@ -134,7 +135,7 @@ function Read-InteractiveComponents {
     Write-Host ""
     Write-Host "SLE Installer - interactive mode"
     Write-Host "Choose what to install:"
-    Write-Host "  1) skills only (the 5 SLE skills)"
+    Write-Host "  1) skills only (the 6 SLE skills)"
     Write-Host "  2) skills + CI (recommended for first repository)"
     Write-Host "  3) skills + CI (full setup)"
     Write-Host "  4) ci only"
@@ -314,9 +315,10 @@ function Install-Skills {
     $destination = Get-SkillsDestination -Ctx $Ctx
     Write-Step "installing skills to: $destination (scope=$($Ctx.Scope))" 'info'
 
-    # the four cycle skills, then the accessories - accessories run before the
-    # cycle and are installed the same way, so one list covers both
-    $skills = @('especificar', 'codificar', 'verificar', 'homologar', 'prototipar-frontend')
+    # the four cycle skills, then orquestrar (which drives them), then the
+    # accessories - none of them install differently, so one list covers all
+    $skills = @('especificar', 'codificar', 'verificar', 'homologar', 'orquestrar',
+        'prototipar-frontend')
     foreach ($skill in $skills) {
         $ok = Copy-SkillFolder -SkillName $skill -SourceDir $Script:SOURCE_ROOT `
             -DestRoot $destination -Ctx $Ctx
