@@ -1,0 +1,23 @@
+name: SLE — PR spec/code diff
+
+on:
+  pull_request:
+
+jobs:
+  spec-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Verify code change is accompanied by spec change
+        run: |
+          python tooling/ci/scripts/pr_spec_diff.py \
+            --base-ref "origin/${{ github.base_ref }}" \
+            --head-ref "HEAD"

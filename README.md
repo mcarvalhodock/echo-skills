@@ -1,73 +1,109 @@
-# ECHO
+# Spec Loop Engineering (SLE)
 
-Uma disciplina pessoal pra unir rigor de engenharia e velocidade de IA em coding assistido — especificar antes de codificar, planejar antes de implementar, verificar antes de declarar pronto.
+Disciplina pessoal para desenvolvimento assistido por IA: **Spec-Driven Development** com duas invariantes que aguentam pressão, e nada além disso.
 
-> **Status: em teste.** Isso não é um framework maduro nem um dogma — é um experimento pessoal que estou rodando em tarefas reais antes de considerar "certo". Se você achou este repo, sinta-se à vontade pra usar, forkar ou roubar pedaços, mas saiba que ainda estou validando se funciona sob pressão de verdade.
+> **Status: v3 — uma subtração.** A v2 tinha 5 skills, 6 fases, 5 invariantes, 3 hooks e 6 tipos de artefato. Ela custava mais e entregava menos: em um ciclo real, produziu passagens, logs e registros suficientes para eu declarar uma spec "verde ponta a ponta" — e um pedido de dez linhas a um contexto limpo encontrou sete critérios não atendidos. Todo documento escrito entre esses dois pontos teve valor negativo: custou tokens e deu credibilidade a uma afirmação falsa.
+>
+> A v3 corta o que não se pagou. O resultado aterrissa perto do ECHO v1 (`especificar` / `planejar` / `homologar`), guardando a única coisa que a v2 acertou de verdade: **a atestação por leitura limpa**.
+>
+> Houve uma automação de encadeamento entre as fases, fora do método. Ela saiu: era dispensável por construção, e encadear à mão bastou. As skills continuam sendo prompts.
 
 ---
 
-## Por que isso existe
-
-Prompt sozinho diz intenção, não faz o trabalho. É fácil pedir pra IA gerar código rápido e confundir "compilou" com "está certo" — o equivalente, em engenharia, de achar que existe atalho pra disciplina de longo prazo. ECHO é a tentativa de trazer de volta o rigor de sempre (especificação clara, verificação real, revisão de decisão de arquitetura) pro fluxo de trabalho com agentes de IA, sem virar burocracia que ninguém segue na prática.
-
 ## O ciclo
 
-Quatro fases, em loop — nunca linear, nunca pulado:
+| skill | entrega |
+|---|---|
+| `especificar` | plano específico da demanda — no máximo **15 critérios falsificáveis** |
+| `codificar` | o código que satisfaz a spec, mais os testes **daquela demanda** |
+| `verificar` | roda o que a demanda toca, e obtém veredito de **leitura limpa** |
+| `homologar` | **no fim do desenvolvimento**: suíte completa e o checklist arquitetural |
 
-| Fase | O quê | Natureza |
-|---|---|---|
-| **E**specificar | Intenção vira contrato verificável antes de qualquer prompt de código | Você define |
-| **C**odificar | Plano de implementação aprovado antes do código, IA executa dentro do escopo | IA acelera, você aprova |
-| **H**omologar | Critérios de aceite viram teste real + revisão arquitetural humana | Verificação + julgamento |
-| **O**bservar | O que quebrou que a spec não previu vira input pra próxima especificação | Fecha o loop |
+`homologar` não roda por demanda. Cada demanda fecha em `verificar`; a suíte inteira roda uma vez, no fim — homologar cada spec contra a suíte completa é o custo que essa separação existe para evitar.
 
-Regra de ouro, resumida: **nenhuma linha de código antes de existir contrato; nenhuma implementação antes de existir plano aprovado; nenhuma tarefa "pronta" sem verificação real e revisão humana.**
+Cada fase roda em **sessão limpa** e não invoca a seguinte. Quem encadeia é você, à mão.
 
-O guia completo, com o raciocínio por trás de cada fase, está em [`metodologia-echo.md`](./metodologia-echo.md).
+**Duas paradas por ciclo, e o número não cresce com o tamanho do lote:**
+
+```
+especificar × N → ┤aprovar o lote├ → (codificar → verificar) × N → homologar → ┤checklist├
+     conversa                                    headless                headless
+```
+
+`especificar` é **interativa** de propósito: é a fase onde falta contexto, e o agente precisa perguntar. As outras rodam headless — lá a conversa não acrescenta, porque `codificar` tem a spec como contrato e `verificar` mede contra ela.
+
+Método completo, em uma página: [`metodologia-sle.md`](./metodologia-sle.md).
+
+**E os critérios não envelhecem em silêncio.** Antes de fechar o ciclo, todos os critérios de todas as specs do alvo são relidos contra o código que existe agora — porque veredito julga o código de um momento, e o código muda depois.
+
+## As duas invariantes
+
+1. **O contrato precede a construção.** Spec escrita por quem já sabe como vai construir vira descrição, não contrato — e nenhuma verificação posterior detecta isso.
+2. **Quem escreve não atesta.** `codificar` escreve os próprios testes, então a suíte verde é autoatestada. O antídoto é a leitura limpa dentro de `verificar`: dez linhas de molde fixo, contexto que não participou, saída em arquivo.
+
+Não há hook de sessão, papel ativo nem fronteira de quem toca qual arquivo. Essas defesas custaram mais do que protegiam.
+
+## O alvo
+
+O método não mora no codebase que ele trabalha. Instala-se uma vez e opera sobre N codebases: o **alvo** é parâmetro de cada fase, e todo caminho — `docs/specs/`, `.sle/manifesto.md`, a suíte, o ref base — é relativo a ele. A exceção é [`dominios.md`](./dominios.md), que é do método e vale para todos.
 
 ## O que tem neste repo
 
 ```
 .
-├── README.md
-├── metodologia-echo.md          # o método, explicado
-├── template-especificacao.md    # template de spec em 3 níveis (micro/padrão/complexo)
-├── propostas/
-│   └── expansao-para-times.md   # hipótese não validada, não é mudança nas skills
-├── especificar/SKILL.md         # Fase E — gera e trava a especificação
-├── planejar/SKILL.md            # Fase C — traduz spec em plano aprovável
-└── homologar/SKILL.md           # Fase H — verifica critérios + cobra revisão arquitetural
+├── metodologia-sle.md          # o método, em uma página
+├── dominios.md                 # catálogo canônico de domínios
+├── especificar/SKILL.md
+├── codificar/SKILL.md
+├── verificar/SKILL.md
+├── homologar/SKILL.md
+├── prototipar-frontend/SKILL.md # acessória: roda ANTES do ciclo, não é fase dele
+├── prototipar-frontend/preview/ # docker que serve a tela quando o alvo não serve
+├── .sle/manifesto.md           # domínios ativos + padrão de código + paths de produção
+├── scripts/install.*           # instaladores (bash e PowerShell) + testes
+├── tooling/ci/                 # enforcement de repositório (2 workflows)
+├── propostas/                  # tese histórica (v1..v4) — leitura, não vigente
+└── docs/                       # specs, vereditos, planos e guia de migração
 ```
 
-As três skills são feitas pra Claude Code (ou qualquer harness compatível com o formato `SKILL.md`), mas o método em si não depende de nenhuma ferramenta específica — dá pra aplicar manualmente com qualquer assistente de IA, só copiando os templates.
+## Instalação
 
-## Instalação das skills
-
-**Claude Code:**
 ```bash
-cp -r especificar planejar homologar ~/.claude/skills/
+./scripts/install.sh            # menu interativo
+./scripts/install.ps1           # Windows
 ```
-Ou copie para `.claude/skills/` na raiz de um projeto específico, se quiser escopo local em vez de global.
 
-**Claude.ai:** zipe cada pasta de skill e faça upload em Settings → Features → Skills (planos Pro/Max/Team/Enterprise com code execution habilitado).
+Ou manualmente, no Claude Code:
 
-Depois de instaladas, elas se encadeiam sozinhas: `especificar` encaminha pra `planejar`, que encaminha pra `homologar` ao fim da implementação.
+```bash
+cp -r especificar codificar verificar homologar ~/.claude/skills/
+```
 
-## Como usar, no dia a dia
+Para escopo local, copie para `.claude/skills/` na raiz do projeto. No Claude.ai, zipe cada pasta e suba em Settings → Features → Skills.
 
-1. Peça a tarefa normalmente — a skill `especificar` entra automaticamente (ou chame `/especificar`).
-2. Ela classifica o risco (micro/padrão/complexo) e preenche a spec com você, sem deixar nenhuma decisão pendurada pra depois.
-3. Pra tarefas Nível 2+, ela encaminha pra `planejar`, que gera um roteiro de implementação — você aprova ou ajusta antes de qualquer código.
-4. Código é escrito estritamente dentro do plano aprovado. Desvio no meio do caminho exige nova aprovação, não improviso silencioso.
-5. Ao final, `homologar` confere cada critério de aceite contra teste real e conduz um checklist de revisão arquitetural — que você responde, ela não responde por você.
-6. Fase O é sua: o que quebrou que a spec não previu vira ajuste no próximo `especificar`.
+Conferir o que já está instalado vale a pena antes de julgar o método: o instalador **pula** o que já existe, e uma skill defasada no destino se comporta como uma regra que você não escreveu. Use `--force` para sobrescrever.
 
-## O que ainda falta (honestamente)
+## No dia a dia
 
-- **Fase O ainda não tem skill própria** — é prática manual de retrospectiva por enquanto.
-- **Enforcement ainda é probabilístico, não determinístico.** As três skills são prompt bem estruturado, não hook. Nada aqui *bloqueia* de verdade se o modelo (ou eu) decidir ignorar — um hook `PreToolUse` que trava a primeira edição de código sem spec salva é o próximo passo natural pra fechar essa lacuna.
-- **Zero validação em escala.** Isso foi desenhado, não testado sob pressão real de prazo ainda. Uso pessoal primeiro, difusão pro time só depois de eu conseguir defender cada parte com exemplo real, não com teoria. Raciocínio inicial (ainda hipotético, não implementado) sobre o que mudaria pra 10+ pessoas está registrado em [`propostas/expansao-para-times.md`](./propostas/expansao-para-times.md).
+1. **Conserto?** Se a régua é um comando com exit code que você escreve antes, nada novo persiste e nenhum contrato público muda — conserte e pronto. Sem spec, sem ciclo. As três perguntas são objetivas de propósito: enquanto o ônus for "justifique por que isto é barato", a resposta segura é sempre escalar.
+2. `/especificar` — o plano. Você aprova antes de qualquer código.
+3. `/codificar` — implementa e escreve os testes da demanda. Não roda a suíte completa.
+4. `/verificar` — roda o que a demanda toca e abre a leitura limpa. Sem pergunta arquitetural.
+5. Repita 3–4 por demanda do lote.
+6. `/homologar`, no fim — suíte inteira e o checklist que só você responde.
+
+Cada fase é digitada por você, em sessão nova. Já houve automação de encadeamento aqui; ela saiu porque o custo dela não se pagou contra digitar quatro comandos. O registro do que foi construído e por que foi recusado está em `docs/specs/loop-*.md` e `docs/specs/sle-*.md`.
+
+## O que ainda falta, honestamente
+
+- **O loop nunca invocou um agente de verdade.** Toda a suíte roda com executor falso, de propósito — nenhum teste chama `claude` nem `agent`, porque teste que depende de LLM não é régua, é aposta. O primeiro uso real é o teste que nenhuma suíte daqui faz.
+- **A v3 não rodou um ciclo inteiro num projeto que não seja este.** Ela nasceu do post-mortem da v2, e se construiu aplicando o próprio método a si mesma; o teste é o próximo projeto real.
+- **`homologar` no fim pressupõe que existe um fim.** Em produto contínuo, "fim" provavelmente vira cadência — e essa cadência ainda não está definida.
+- **A leitura limpa custa um subagente por demanda.** É barata perto do que substituiu, mas não é grátis, e ainda não sei o piso de demanda em que ela deixa de valer.
+- **Quatro dívidas reconhecidas e sem spec:** `driver.py` tem 815 linhas e carrega o laço, os dois segmentos, a auditoria e o despacho de seis subcomandos — o próximo módulo tem 213; o campo `evidencia` da decisão carrega oito significados diferentes; `guarda-do-alvo` cobre cinco falhas distintas que ninguém distingue programaticamente; e `criterion_coverage` mantém um conjunto **global** de identificadores, com 16 prefixos em uso, então prefixo repetido entre specs esconde lacuna alheia.
+- **Metade do enum `Motivo` mora no módulo puro sem ser usada lá.** São 12 membros e 6 aparecem só em `lote`, `driver` e na auditoria: cada camada nova que inventa um motivo de parada edita o núcleo.
+- **`docs/specs/instaladores-sle.md` é da v2** e descreve skills que não existem mais. O CI acusa onze critérios descobertos por causa dela, e isso é honesto — a spec é que está velha.
 
 ## Licença
 
-Use como quiser. Isso é registro pessoal de processo, não produto — sem garantia, sem suporte formal, ajuste pro seu contexto.
+Use como quiser. Registro pessoal de processo, não produto — sem garantia, sem suporte formal, ajuste ao seu contexto.

@@ -1,6 +1,8 @@
-# Proposta (não validada): ECHO para múltiplas pessoas/times
+# Proposta (não validada): SLE para múltiplas pessoas/times
 
-> **Status: hipótese, não mudança.** Isso não é uma extensão das skills — é o registro de um raciocínio, pra não perder o contexto e pra servir de ponto de partida quando (e se) houver evidência real de time justificando a mudança. Por enquanto, nenhuma linha das três skills (`especificar`, `planejar`, `homologar`) deve mudar por causa deste documento.
+> **Status: hipótese, não mudança.** Isso não é uma extensão das skills — é o registro de um raciocínio, pra não perder o contexto e pra servir de ponto de partida quando (e se) houver evidência real de time justificando a mudança. Por enquanto, nenhuma linha das skills do método deve mudar por causa deste documento.
+
+> **Nota histórica:** este documento foi escrito originalmente sobre o ECHO (v1 do método), quando havia três skills. Após a refatoração para SLE (v2), o raciocínio abaixo continua válido — mas ganha uma leitura nova: várias das mudanças que "precisariam acontecer antes disso virar mudança real" já foram absorvidas dentro do próprio método (enforcement determinístico via hooks e CI, gates humanos explícitos, Observer com skill própria). O texto abaixo preserva a forma original para documentar a evolução do raciocínio; ver footer para o mapeamento SLE → itens desta proposta.
 
 ## Por que isso está aqui, e não nas skills
 
@@ -8,7 +10,7 @@ O README já é explícito sobre isso: "difusão pro time só depois de eu conse
 
 ## O raciocínio, resumido
 
-A pergunta que originou isso: como o ciclo E-C-H-O se comporta quando sai de "uma pessoa + IA" pra "10+ pessoas"? A resposta, ainda hipotética: **o ciclo em si não muda de forma — o que falta é quem garante que ele foi seguido.** Solo, isso é disciplina pessoal. Em time, precisa virar estrutura que não depende de ninguém lembrar.
+A pergunta que originou isso: como o ciclo (ECHO na época, SLE hoje) se comporta quando sai de "uma pessoa + IA" pra "10+ pessoas"? A resposta, ainda hipotética: **o ciclo em si não muda de forma — o que falta é quem garante que ele foi seguido.** Solo, isso é disciplina pessoal. Em time, precisa virar estrutura que não depende de ninguém lembrar.
 
 Isso se desdobra em seis eixos, todos ainda teóricos:
 
@@ -26,5 +28,23 @@ Isso se desdobra em seis eixos, todos ainda teóricos:
 - Só depois disso, os campos concretos (aprovador nomeado, referência externa/ticket, responsáveis por passo no plano) voltam a ser avaliados — e provavelmente um de cada vez, não os seis juntos.
 
 ---
+
+## Nota de reconciliação com o SLE (v2 do método)
+
+A refatoração para SLE absorveu, dentro do próprio método (não como extensão para time), várias mudanças que este documento listava como pré-requisitos para a expansão. Mapeamento:
+
+- **Item 1 — "de convenção pra gate"** → resolvido no SLE por `tooling/hooks/` (enforcement in-session) e `tooling/ci/` (enforcement de repositório). As invariantes 1 e 2 (Designer ≠ Executor, Executor ≠ Validator) são deterministicamente checadas. Não é mais "hipótese para time", é infraestrutura instalada.
+- **Item 3 — "de nível autoavaliado pra critério codificado"** → o SLE mantém autoavaliação (N1/N2/N3), mas adiciona o falsifiability gate: cada critério da spec precisa ser objetivamente falseável, o que reduz a variância entre avaliadores. Ainda não é critério totalmente codificado — segue sendo um item para pilotar em time.
+- **Item 5 — "de memória pessoal pra observabilidade real"** → o SLE tem skill `observer` com dois modos (event-driven / cadence-driven) e log estruturado `.sle/pressao-metodo.md`. Não substitui error tracking de time, mas dá um receptáculo formal para sinais.
+- **Itens 2, 4, 6** — seguem válidos como propostas não-validadas para time (ID rastreável em ticket, aprovador nomeado por domínio, calibração de N1 combinada pelo time). São o que ainda pede piloto real antes de virar mudança.
+
+### Correção v3 (2026-08-12)
+
+Duas linhas do mapeamento acima **deixaram de ser verdade** e ficam registradas em vez de apagadas, porque o motivo importa:
+
+- **Item 1** citava `tooling/hooks/` como enforcement instalado. Os três hooks foram removidos na v3: custaram mais do que protegiam, e a v2 blindada por eles produziu um "verde ponta a ponta" com sete critérios não atendidos. O que sobrou é `tooling/ci/` mais sessão limpa por fase. Para a proposta de time isso **aumenta** a pergunta em aberto, não diminui: sem hook, a fronteira de papel depende de o operador conhecer o método — o que vale para o autor e não se sabe se vale para um segundo.
+- **Item 5** citava a skill `observer` e o log `.sle/pressao-metodo.md`. Ambos foram removidos na v3. Não há receptáculo formal para sinais hoje, e o item volta a ser pergunta aberta.
+
+O restante do raciocínio segue de pé.
 
 *Este documento nasceu de uma sessão real de trabalho (2026-07-11), registrado como aprendizado a partir da própria disciplina que o método pede: nenhuma mudança de processo sem evidência, nem quando a mudança é no próprio processo.*

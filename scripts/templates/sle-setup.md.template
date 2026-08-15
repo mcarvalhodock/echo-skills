@@ -1,0 +1,60 @@
+# SLE — Setup deste repositório
+
+Gerado pelo instalador em `{{INSTALL_DATE}}`.
+Repositório destino: `{{TARGET_REPO}}`.
+Componentes instalados: **{{COMPONENTS}}**.
+
+## Artefatos criados
+
+{{ARTIFACTS_LIST}}
+
+## Passo 1 — Revisar o manifesto
+
+Abra `{{TARGET_REPO}}/.sle/manifesto.md`. O instalador criou um esqueleto com placeholders `<preencher: ...>`; substitua cada um antes de considerar o repositório operacional.
+
+O que mais importa:
+
+- `## Paths de produção` — sem isso o CI usa defaults (`src/`, `lib/`, `app/`, `internal/`, `pkg/`, `cmd/`) que podem não bater com o layout daqui.
+- `## Padrão de código` — é o que `codificar` segue. Sem declaração, ele usa boas práticas gerais.
+
+## Passo 2 — O ciclo
+
+Quatro skills, nesta ordem:
+
+| skill | o que faz |
+|---|---|
+| `especificar` | plano específico da demanda — no máximo 15 critérios falsificáveis |
+| `codificar` | implementa a spec e escreve os testes daquela demanda |
+| `verificar` | roda o que a demanda toca e obtém veredito de leitura limpa |
+| `homologar` | **no fim do desenvolvimento**: suíte completa e o checklist arquitetural |
+
+Comece uma demanda com `/especificar`. Não há papel ativo para configurar, nem marker-file, nem hook de sessão: a separação que importa — quem escreve não atesta — é comprada pela leitura limpa dentro de `verificar`, e ela não precisa de infraestrutura.
+
+**`homologar` não roda por demanda.** Cada demanda fecha em `verificar`; a suíte completa roda uma vez, ao fim do ciclo.
+
+## Passo 3 — Ativar CI bloqueante (opcional, depois de calibrar)
+
+Se instalou CI (`{{CI_INSTALLED}}`), os workflows em `.github/workflows/` foram copiados **em modo warning** — cada step tem `continue-on-error: true`. Isso dá um ou dois sprints para:
+
+1. Rodar o CI em PRs reais e ver quais violações aparecem.
+2. Ajustar `## Paths de produção` no manifesto para eliminar falso-positivo.
+3. Adicionar marcadores de critério nos testes existentes.
+
+Quando estiver confortável, remova `continue-on-error: true` de cada `.yml`.
+
+## Como desinstalar
+
+Delete manualmente:
+
+{{UNINSTALL_LIST}}
+
+E, se as skills foram instaladas em escopo global, delete `~/.claude/skills/especificar/`, `~/.claude/skills/codificar/`, `~/.claude/skills/verificar/` e `~/.claude/skills/homologar/`.
+
+## Próximos passos
+
+- Ler [`metodologia-sle.md`](metodologia-sle.md) do repositório `echo-skills` — uma página.
+- Antes da primeira demanda real, rode `pytest tooling/` no repositório-fonte para confirmar que os scripts de CI passam.
+
+---
+
+*Gerado automaticamente. É seguro modificar — o instalador não sobrescreve nas próximas execuções.*

@@ -1,70 +1,74 @@
 ---
 name: homologar
-description: Use esta skill depois que a implementação de uma tarefa (Fase C, geralmente conduzida via skill "planejar") estiver concluída e o usuário disser algo como "terminei", "está pronto", "podemos considerar concluído", "vamos homologar", ou pedir pra verificar/validar o que foi feito. Confere os critérios de aceite da spec original contra testes reais e conduz uma revisão arquitetural guiada — nunca aprova sozinha. NÃO use se ainda não existe spec e implementação concluída para esta tarefa.
+description: Use ao FIM do desenvolvimento — quando as demandas já passaram por `verificar` e chegou a hora de fechar o ciclo. Roda a suíte completa e prepara as perguntas de arquitetura para o humano responder. NÃO use por demanda; homologar cada spec com a suíte inteira é o custo que essa separação existe para evitar.
 disable-model-invocation: false
 ---
 
-# Homologar (Fase H do método ECHO)
+# Homologar
 
-Você é o guardião da Fase H. Sua função aqui é **provar**, com evidência, que o código atende ao contrato definido na Fase E — nunca aceitar "parece que funciona" como critério de pronto. Esta fase tem duas partes de natureza diferente, e você deve tratá-las de forma diferente:
+Fim do desenvolvimento. Duas coisas: a suíte inteira, e as perguntas que só um humano responde.
 
-- **Verificação automática** — você pode e deve executar, checar e reportar objetivamente.
-- **Revisão arquitetural** — você não aprova sozinho. Sua função é fazer a pergunta certa e exigir que o usuário responda, nunca supor a resposta por ele.
+**Não use isto por demanda.** Cada demanda fecha em `verificar`. Se você está aqui depois de uma spec só, está pagando o preço que a separação existe para evitar.
 
-## Regra de ouro
+## Insumos
 
-A Fase H só é declarada concluída quando (a) todo critério de aceite da spec tem verificação automática passando, e (b) o checklist de revisão arquitetural foi respondido pelo usuário — não pulado, não respondido por você em nome dele.
+Você roda em sessão limpa, no fim do ciclo. Precisa receber:
 
-## Passo 1 — Localizar spec e implementação
+- **as specs do ciclo** e **seus vereditos** — é o conjunto que define o que "o ciclo" quer dizer; sem ele você mede um recorte arbitrário do repositório;
+- **o ref base do ciclo** — o ponto de partida de tudo, não o da última demanda;
+- **o alvo** — o codebase.
 
-Confirme que existe a spec (Fase E) e que a implementação (Fase C) foi concluída conforme o plano aprovado. Se um dos dois não existir ou estiver incompleto, pare e explique que a Fase H depende deles — encaminhe de volta para "especificar" ou "planejar" conforme o caso.
+Faltou um deles? **Pare e diga qual.** Um ciclo cujo contorno você inferiu produz relatório que parece completo e não é.
 
-## Passo 2 — Mapear critérios de aceite contra testes
+Se o lote trouxe specs em quarentena, elas **não** entram: não fecharam, e homologar o que não fechou mistura duas medições.
 
-Liste, um a um, os critérios de aceite da spec. Para cada um:
+## Passo 1 — A suíte completa é sua
 
-```markdown
-- [ ] Critério: "[texto do critério]"
-      Teste correspondente: [caminho/nome do teste, ou "NÃO EXISTE"]
-```
+Rode tudo: unitário, integração, ponta a ponta, formatação, lint. Uma vez, aqui.
 
-Se algum critério não tiver teste correspondente:
-- Se for razoavelmente testável, **escreva o teste agora**, antes de seguir.
-- Se genuinamente não for testável de forma automatizada (ex: UX subjetiva), sinalize isso explicitamente e pergunte ao usuário como ele quer verificar esse critério — não finja que está coberto.
+**Antes de abrir o código.** O que só a suíte completa pega é quebra **fora** das demandas — um teste antigo reprovando o comportamento novo, uma migração que colide, uma configuração compartilhada que mudou. É real, e é por isso que ela existe; ela não some, ela tem dono.
 
-## Passo 3 — Rodar a verificação e reportar com evidência
+Reporte número real por suíte: quantos executam, quantos passam, quantos falham. Comparar com a medição anterior é o que mostra se o ciclo andou.
 
-Antes de executar qualquer comando que possa alterar ou apagar dados (testes que truncam/limpam tabelas, migrações, scripts de seed, fixtures de banco), confirme explicitamente que o alvo é um ambiente isolado do usado pelo desenvolvimento/uso real — não assuma isolamento por analogia com outro projeto ou por convenção implícita. Verifique o nome do banco/schema, a variável de ambiente, ou o que for necessário para ter certeza antes de rodar. Isso não é uma garantia automática do método — é uma responsabilidade de execução sua, no momento em que o comando roda.
+## Passo 2 — O checklist arquitetural
 
-Execute a suíte de testes relevante (via bash) e reporte o resultado **real** — passou, falhou, ou não rodou por algum motivo. Nunca diga "deve ter funcionado" sem ter rodado. Se algo falhar:
-1. Não avance para o Passo 4.
-2. Reporte a falha ao usuário com o resultado exato.
-3. Volte para a Fase C para correção, ou pergunte como o usuário quer proceder.
+Agora pode ler o código: a suíte já rodou e o resultado está fixado.
 
-## Passo 4 — Checklist de revisão arquitetural (guiada, não automática)
-
-Apresente estas perguntas ao usuário e registre as respostas dele — não responda por ele, mesmo que pareça óbvio:
+Prepare as perguntas com **uma observação concreta cada** — um ponto do código, uma frase, sem julgamento. **Você não responde nenhuma delas.**
 
 ```markdown
-### Revisão arquitetural
-- Essa decisão de design segura bem se o volume/uso triplicar?
-- Algum acoplamento novo foi introduzido que preocupa a longo prazo?
-- Essa implementação diverge do plano aprovado em algum ponto não sinalizado antes?
-- Existe dívida técnica sendo criada aqui conscientemente? Se sim, foi registrada em algum lugar (ticket, comentário, backlog)?
-- Você, olhando o código gerado, assinaria embaixo dessa decisão como se tivesse escrito à mão?
+- Esta decisão segura se o volume triplicar?
+  [observação concreta]
+- Algum acoplamento novo preocupa a longo prazo?
+  [observação concreta]
+- A implementação diverge do plano em algum ponto não sinalizado?
+  [aponte, ou declare "sem divergência aparente"]
+- Há dívida sendo criada conscientemente? Foi registrada?
+  [observação concreta]
+- Você assinaria embaixo disto como se tivesse escrito à mão?
+  (só o humano responde — não observe nada aqui)
 ```
 
-Se o usuário tentar pular esse checklist ("pode marcar tudo como ok"), avise uma vez que isso esvazia o propósito da Fase H, e respeite a decisão dele — mas não preencha as respostas no lugar dele.
+Observação concreta é "`/cadastro` monta as 5571 cidades a cada requisição, sem cache". Não é "a performance pode ser um problema".
 
-## Passo 5 — Declarar a Fase H concluída
+Se o humano quiser pular, avise **uma vez** que isso esvazia a fase, respeite a decisão e siga.
 
-Só declare concluído quando:
-- [ ] Todo critério de aceite tem teste passando (ou verificação alternativa explicitamente combinada)
-- [ ] O checklist de revisão arquitetural foi respondido pelo usuário
-- [ ] Nenhuma falha de teste ficou sem resolução ou sem decisão explícita do usuário
+## Passo 3 — Reporte
 
-Depois, informe que o ciclo ECHO desta tarefa está pronto para a Fase O (Observar) — que não é conduzida por esta skill, é uma prática contínua do usuário: registrar o que a spec não previu e alimentar isso de volta no próximo uso de "especificar".
+```markdown
+## O que mudou
+[uma linha por frente do ciclo]
 
-## Lembrete
+## O que está vermelho
+| suíte | executa | passa | falha |
+|---|---|---|---|
 
-Esta skill cobre só a Fase H. Ela verifica e cobra rigor — ela não decide, no lugar do usuário, se uma arquitetura está boa o suficiente. Isso é, e continua sendo, julgamento humano.
+## O que precisa da sua decisão
+[o checklist, mais o que a suíte expôs]
+```
+
+## Quando o ciclo não fecha
+
+Falha fora das demandas é o achado mais valioso desta fase — foi ela que a suíte completa existiu para encontrar. Leve ao humano com a saída real e as três saídas de sempre: corrigir, emendar a spec, ou declarar fora de escopo.
+
+Arquitetura é julgamento humano. Você prepara as perguntas, não as respostas.
