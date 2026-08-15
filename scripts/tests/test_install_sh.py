@@ -73,6 +73,20 @@ class TestExecucaoRealSkillsLocal:
         assert skill_dir.is_dir()
         assert (skill_dir / "SKILL.md").is_file()
 
+    def test_instala_o_preview_junto_da_skill(self, fake_target: Path) -> None:
+        """V13, V14 — o ativo viaja na cópia recursiva, sem lista nova."""
+        result = run_sh([
+            "--components", "skills",
+            "--scope", "local",
+            "--target-repo", str(fake_target),
+        ])
+        assert result.returncode == 0
+        preview = (
+            fake_target / ".claude" / "skills" / "prototipar-frontend" / "preview"
+        )
+        assert preview.is_dir(), "preview/ não acompanhou a skill"
+        assert (preview / "compose.yml").is_file()
+
 
 class TestIdempotencia:
     def test_segunda_execucao_emite_skip(self, fake_target: Path) -> None:

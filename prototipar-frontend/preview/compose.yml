@@ -1,0 +1,18 @@
+# Preview do protótipo: serve estático, não constrói.
+#
+# Um passo de build aqui escolheria a stack do alvo — que é decisão da codebase
+# lida na ancoragem, não desta imagem. Por isso não há Dockerfile: imagem pronta,
+# diretório montado, nada compilado.
+#
+#   SLE_PREVIEW_DIR=../../algum/lugar docker compose up
+#
+# A tela sobe em http://localhost:8173 — e é essa URL que vai para o resíduo.
+services:
+  preview:
+    image: nginx:alpine
+    ports:
+      # 8173 é o padrão; SLE_PREVIEW_PORT sobrescreve quando o alvo já ocupa a porta
+      - "${SLE_PREVIEW_PORT:-8173}:80"
+    volumes:
+      # somente leitura: o preview serve o protótipo, nunca o altera
+      - "${SLE_PREVIEW_DIR:-./publico}:/usr/share/nginx/html:ro"

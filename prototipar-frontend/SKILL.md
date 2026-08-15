@@ -56,6 +56,36 @@ E ela mostra os estados, não só o feliz:
 
 Os quatro primeiros são onde a interface real desmonta, e são exatamente os que uma maquete costuma pular. Pular aqui devolve para o `especificar` uma hipótese que ninguém testou.
 
+## Servível sem build, desde a primeira linha
+
+**O protótipo nasce abrível direto.** HTML que carrega o próprio CSS e o próprio JS, sem passo de compilação entre escrever e ver.
+
+Isto não é restrição de estilo: é insumo de construção, e por isso vem antes da escada e não depois. Saber que a tela vai subir sem build determina o que você escreve na primeira linha. Protótipo que precisa de `npm install` e `build` para abrir chega no degrau 2 e não abre — e aí o conserto é reescrever, não ajustar.
+
+O preview **serve o que já está pronto; ele não escolhe a stack do alvo.** Essa escolha continua sendo da codebase que você leu na ancoragem — é ela que decide com que ferramenta o código de verdade vai ser feito depois. O que sobe aqui é a tela para reagir, não o começo da implementação.
+
+## A escada: como a tela sobe
+
+**Mostrar arquivo em disco para o humano abrir é recusado.** "Abre esse HTML aí" transfere para ele o trabalho que é seu, e meia dúzia de vezes ele não abre. Você entrega **uma URL**.
+
+Três degraus, nesta ordem:
+
+1. **O jeito que o alvo já roda o frontend dele** — `npm run dev`, `vite`, o script que a ancoragem encontrou. É o primeiro porque a tela sobe dentro do ambiente real, herdando o que já está configurado ali.
+2. **O preview em docker** (`preview/compose.yml`, ao lado desta skill) — quando o alvo não tem jeito próprio, ou tem e o toolchain não está instalado nesta máquina. Serve estático numa porta e nada mais.
+3. **Degradação declarada** — nenhum dos dois disponível.
+
+**O degrau 3 não bloqueia.** Sem docker e sem jeito do alvo, você **não para**: registra no resíduo que a tela não foi servida, mostra o que der e segue até a entrega. O resíduo continua sendo o produto desta skill; uma tela não servida o empobrece, não o cancela.
+
+## Olhe antes de mostrar
+
+**Capture a tela e olhe a imagem antes de mostrá-la ao humano.** Depois conserte o que estiver visivelmente quebrado — tela branca, layout desmontado, estado que não renderiza.
+
+O motivo é aritmético: você tem três rodadas, e uma rodada gasta com um bug é uma rodada que não discutiu a proposta. O humano precisa reagir ao que você propôs, não ao que você errou.
+
+**Essa conferência não consome rodada.** O teto de três conta reação humana; olhar a própria tela é trabalho seu, e você repete quantas vezes precisar antes de mostrar.
+
+Não existe ferramenta obrigatória aqui. Capture do jeito que o ambiente onde você roda oferecer — o que se cobra é a **evidência de que a tela foi vista**, não o instrumento que a produziu. Ambiente sem captura nenhuma: diga isso no resíduo, com a mesma franqueza do degrau 3.
+
 ## Três rodadas, e a terceira é a última
 
 O teto é **três rodadas de reação**. Uma rodada é: você mostra, o humano reage, você ajusta.
@@ -81,6 +111,10 @@ Arquivo, não conversa: `especificar` roda em sessão limpa e nada do que aconte
 
 ## Ancoragem
 [as três linhas, como ficaram no fim]
+
+## Como a tela subiu
+[o degrau — o jeito do alvo (qual comando), o preview em docker, ou não subiu.
+E se ela foi vista: capturada e conferida, ou não, e por quê]
 
 ## O que sobreviveu
 [o que o humano confirmou. Uma linha por decisão, em fatos:
@@ -112,6 +146,8 @@ A relação certa é de consumo: o domínio `experiência` te diz o que a interf
 
 - [ ] A ancoragem nomeia caminhos reais, e a linha "Contradiz" está preenchida (ou diz "nada").
 - [ ] A tela navega, e mostra vazio, carregando, erro e cheio.
+- [ ] A tela subiu por URL, e o resíduo diz por qual degrau — ou por que não subiu.
+- [ ] A tela foi capturada e conferida antes de ser mostrada.
 - [ ] Foram três rodadas ou menos.
 - [ ] O resíduo existe como arquivo, e nomeia o que foi descartado.
 - [ ] Quem ler só o resíduo consegue escrever a spec.

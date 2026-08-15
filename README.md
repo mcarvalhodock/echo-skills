@@ -58,6 +58,7 @@ O método não mora no codebase que ele trabalha. Instala-se uma vez e opera sob
 ├── verificar/SKILL.md
 ├── homologar/SKILL.md
 ├── prototipar-frontend/SKILL.md # acessória: roda ANTES do ciclo, não é fase dele
+├── prototipar-frontend/preview/ # docker que serve a tela quando o alvo não serve
 ├── .sle/manifesto.md           # domínios ativos + padrão de código + paths de produção
 ├── scripts/sle, sle.ps1        # a ferramenta
 ├── scripts/install.*           # instaladores (bash e PowerShell) + testes
