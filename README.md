@@ -57,6 +57,7 @@ O método não mora no codebase que ele trabalha. Instala-se uma vez e opera sob
 ├── codificar/SKILL.md
 ├── verificar/SKILL.md
 ├── homologar/SKILL.md
+├── prototipar-frontend/SKILL.md # acessória: roda ANTES do ciclo, não é fase dele
 ├── .sle/manifesto.md           # domínios ativos + padrão de código + paths de produção
 ├── scripts/sle, sle.ps1        # a ferramenta
 ├── scripts/install.*           # instaladores (bash e PowerShell) + testes

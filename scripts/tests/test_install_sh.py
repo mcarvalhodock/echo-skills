@@ -26,6 +26,13 @@ class TestHelpAndInvocation:
         result = run_sh(["--foo"])
         assert result.returncode == 2
 
+    def test_ajuda_anuncia_a_contagem_certa_de_skills(self) -> None:
+        """P15 — a ajuda para de dizer 4 e passa a nomear a acessória."""
+        result = run_sh(["--help"])
+        assert "4 skills" not in result.stdout
+        assert "5 skills" in result.stdout
+        assert "prototipar-frontend" in result.stdout
+
 
 class TestDryRun:
     def test_dry_run_all_lista_todas_operacoes(self, fake_target: Path) -> None:
@@ -53,6 +60,18 @@ class TestExecucaoRealSkillsLocal:
             skill_dir = fake_target / ".claude" / "skills" / skill
             assert skill_dir.is_dir()
             assert (skill_dir / "SKILL.md").is_file()
+
+    def test_instala_a_acessoria_de_prototipagem(self, fake_target: Path) -> None:
+        """P14 — a acessória entra na mesma lista das quatro do ciclo."""
+        result = run_sh([
+            "--components", "skills",
+            "--scope", "local",
+            "--target-repo", str(fake_target),
+        ])
+        assert result.returncode == 0
+        skill_dir = fake_target / ".claude" / "skills" / "prototipar-frontend"
+        assert skill_dir.is_dir()
+        assert (skill_dir / "SKILL.md").is_file()
 
 
 class TestIdempotencia:
