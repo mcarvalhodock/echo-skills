@@ -63,7 +63,7 @@ python tooling/ci/scripts/criterion_coverage.py || exit 1
 pytest tooling/ci/tests/ -v
 ```
 
-14 testes cobrem: extração de critérios nos dois formatos, cobertura completa e parcial, exclusão de veredito, classificação de paths e três cenários de PR diff.
+15 testes cobrem: extração de critérios nos dois formatos, cobertura completa e parcial, exclusão de veredito, classificação de paths, três cenários de PR diff e o pacote do plugin do Cursor como path de produção deste repositório.
 
 ## Limitações conhecidas
 

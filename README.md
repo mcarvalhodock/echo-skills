@@ -60,6 +60,7 @@ O método não mora no codebase que ele trabalha. Instala-se uma vez e opera sob
 ├── prototipar-frontend/SKILL.md # acessória: roda ANTES do ciclo, não é fase dele
 ├── prototipar-frontend/preview/ # docker que serve a tela quando o alvo não serve
 ├── .sle/manifesto.md           # domínios ativos + padrão de código + paths de produção
+├── .cursor-plugin/plugin.json  # manifesto que faz o Cursor enxergar as skills daqui
 ├── scripts/install.*           # instaladores (bash e PowerShell) + testes
 ├── tooling/ci/                 # enforcement de repositório (2 workflows)
 ├── propostas/                  # tese histórica (v1..v4) — leitura, não vigente
@@ -80,6 +81,8 @@ cp -r especificar codificar verificar homologar ~/.claude/skills/
 ```
 
 Para escopo local, copie para `.claude/skills/` na raiz do projeto. No Claude.ai, zipe cada pasta e suba em Settings → Features → Skills.
+
+No Cursor há um segundo caminho, **ao lado do instalador e não em vez dele**: `.cursor-plugin/plugin.json` declara as seis skills e as três definições de agente onde elas já moram, sem cópia nenhuma. Aponte `~/.cursor/plugins/local` para este repositório e o Cursor as lê da fonte. O Claude Code segue servido pelo instalador, que não muda.
 
 Conferir o que já está instalado vale a pena antes de julgar o método: o instalador **pula** o que já existe, e uma skill defasada no destino se comporta como uma regra que você não escreveu. Use `--force` para sobrescrever.
 
