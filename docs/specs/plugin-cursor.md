@@ -20,8 +20,8 @@ nenhuma.
 - [ ] **M11** `plataforma` — A árvore "O que tem neste repo" do `README.md` nomeia `.cursor-plugin/`.
 - [ ] **M12** `plataforma` — A seção de instalação do `README.md` declara o plugin como caminho ao lado do instalador, e não em vez dele.
 - [ ] **M13** `plataforma` — Os 14 testes de `tooling/ci/` passam.
-- [ ] **M14** `integração` — Carregado de `~/.cursor/plugins/local`, o plugin expõe as seis skills no Cursor.
-- [ ] **M15** `integração` — Carregado de `~/.cursor/plugins/local`, o plugin expõe as três definições de agente no Cursor.
+- [ ] **M14** `integração` — Com o pacote carregado, o painel **Customize → Skills** do Cursor lista as seis skills (`especificar`, `codificar`, `verificar`, `homologar`, `orquestrar`, `prototipar-frontend`) vindas do plugin `sle`.
+- [ ] **M15** `integração` — Com o pacote carregado, o painel **Customize → Agents** do Cursor lista as três definições de agente (`sle-codificar`, `sle-verificar`, `sle-homologar`) vindas do plugin `sle`.
 
 ## Contrato técnico
 - **O ref base das comparações byte-idênticas é `1396c4f45aa89d96962d4ab0c67707dee76cb0a0`.**
