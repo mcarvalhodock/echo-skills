@@ -1,7 +1,11 @@
 ---
 name: orquestrar
-description: Use quando existe uma ou mais specs aprovadas no gate e o próximo passo é conduzi-las até a homologação. Despacha `codificar` e `verificar` em contexto isolado, roteia pelo veredito e devolve ao humano no fim. NÃO use antes de haver spec aprovada, nem para escrever a spec — isso é de `especificar`, e ele roda antes e fora daqui.
-disable-model-invocation: false
+description: >-
+  Use quando existe uma ou mais specs aprovadas no gate e o próximo passo
+  é conduzi-las até a homologação. Despacha `codificar` e `verificar` em
+  contexto isolado, roteia pelo veredito e devolve ao humano no fim. NÃO
+  use antes de haver spec aprovada, nem para escrever a spec — isso é de
+  `especificar`, e ele roda antes e fora daqui.
 ---
 
 # Orquestrar

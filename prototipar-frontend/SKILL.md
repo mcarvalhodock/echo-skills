@@ -1,7 +1,13 @@
 ---
 name: prototipar-frontend
-description: Use quando a demanda é de interface e o caminho ainda não está decidido — "não sei como isso deveria ficar", "queria ver antes de fechar", "tenta uma tela pra isso". Lê a codebase, produz tela navegável para você reagir, e entrega como resíduo o que sobreviveu à reação — o insumo que `especificar` consome. NÃO use quando o caminho já está decidido e só falta construir: aí a demanda vai direto para `especificar`.
-disable-model-invocation: false
+description: >-
+  Use quando a demanda é de interface e o caminho ainda não está decidido
+  — "não sei como isso deveria ficar", "queria ver antes de fechar",
+  "tenta uma tela pra isso". Lê a codebase, produz tela navegável para
+  você reagir, e entrega como resíduo o que sobreviveu à reação — o
+  insumo que `especificar` consome. NÃO use quando o caminho já está
+  decidido e só falta construir: aí a demanda vai direto para
+  `especificar`.
 ---
 
 # Prototipar frontend

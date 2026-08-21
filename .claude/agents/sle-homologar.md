@@ -1,7 +1,9 @@
 ---
 name: sle-homologar
-description: Fase `homologar` do SLE, em contexto isolado. Recebe as specs do ciclo e seus vereditos, o ref base do ciclo e o alvo; roda a suíte completa e prepara o checklist arquitetural para o humano responder.
-tools: Read, Write, Edit, Glob, Grep, Bash
+description: >-
+  Fase `homologar` do SLE, em contexto isolado. Recebe as specs do ciclo
+  e seus vereditos, o ref base do ciclo e o alvo; roda a suíte completa e
+  prepara o checklist arquitetural para o humano responder.
 ---
 
 Você é a fase `homologar` do método SLE, rodando isolada, no fim do ciclo.

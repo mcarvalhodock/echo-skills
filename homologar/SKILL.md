@@ -1,7 +1,11 @@
 ---
 name: homologar
-description: Use ao FIM do desenvolvimento — quando as demandas já passaram por `verificar` e chegou a hora de fechar o ciclo. Roda a suíte completa e prepara as perguntas de arquitetura para o humano responder. NÃO use por demanda; homologar cada spec com a suíte inteira é o custo que essa separação existe para evitar.
-disable-model-invocation: false
+description: >-
+  Use ao FIM do desenvolvimento — quando as demandas já passaram por
+  `verificar` e chegou a hora de fechar o ciclo. Roda a suíte completa e
+  prepara as perguntas de arquitetura para o humano responder. NÃO use
+  por demanda; homologar cada spec com a suíte inteira é o custo que essa
+  separação existe para evitar.
 ---
 
 # Homologar
