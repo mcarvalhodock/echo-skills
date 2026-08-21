@@ -60,6 +60,7 @@ O método não mora no codebase que ele trabalha. Instala-se uma vez e opera sob
 ├── prototipar-frontend/SKILL.md # acessória: roda ANTES do ciclo, não é fase dele
 ├── prototipar-frontend/preview/ # docker que serve a tela quando o alvo não serve
 ├── .sle/manifesto.md           # domínios ativos + padrão de código + paths de produção
+├── .cursor-plugin/plugin.json  # manifesto que faz o Cursor enxergar as skills daqui
 ├── scripts/install.*           # instaladores (bash e PowerShell) + testes
 ├── tooling/ci/                 # enforcement de repositório (2 workflows)
 ├── propostas/                  # tese histórica (v1..v4) — leitura, não vigente
@@ -81,7 +82,33 @@ cp -r especificar codificar verificar homologar ~/.claude/skills/
 
 Para escopo local, copie para `.claude/skills/` na raiz do projeto. No Claude.ai, zipe cada pasta e suba em Settings → Features → Skills.
 
+No Cursor há um segundo caminho, **ao lado do instalador e não em vez dele**: `.cursor-plugin/plugin.json` declara as seis skills e as três definições de agente onde elas já moram, sem cópia nenhuma. Aponte `~/.cursor/plugins/local` para este repositório e o Cursor as lê da fonte. O Claude Code segue servido pelo instalador, que não muda.
+
 Conferir o que já está instalado vale a pena antes de julgar o método: o instalador **pula** o que já existe, e uma skill defasada no destino se comporta como uma regra que você não escreveu. Use `--force` para sobrescrever.
+
+## Formato das skills — genérico único, para qualquer harness
+
+O frontmatter YAML de cada `SKILL.md` carrega **duas chaves**, e só elas: `name` (slug) e `description` (texto). Nada específico de harness — sem `disable-model-invocation`, sem `tools`, sem chave que sirva a um carregador e não a outro. Um parser YAML estrito abre os seis arquivos, e é isso que fixa "carregar" como fato observável em vez de acordo tácito.
+
+A **fonte versionada** deste repositório passa a ser suficiente para o fluxo atual: o carregamento das skills não depende de cópia antiga em `~/.claude/skills/` estar presente ou atualizada. Quem quiser continuar usando a instalação global do Claude Code pode — o comportamento é o mesmo —, mas o método não precisa mais dela para operar. Em Cursor, as skills são lidas de onde estão no repositório, sem passo de instalação.
+
+O mesmo contrato vale para as definições em `.claude/agents/`: `name` e `description`, e nada além.
+
+## Validar a carga das seis skills
+
+Uma **validação de carga** confere que o parser abre `especificar`, `codificar`, `verificar`, `homologar`, `orquestrar` e `prototipar-frontend` — as três primeiras eram as que falhavam em Cursor por descrição com `: ` no meio da frase, e o teste desta demanda é o piso desse cenário nunca voltar sem ser visto.
+
+```powershell
+python -m pytest tests/test_versao_limpa_das_skills.py -v
+```
+
+O que o teste mede:
+
+- As seis skills carregam num `yaml.safe_load` estrito com as chaves `{name, description}` — mesma forma, mesmo mecanismo (C2, C3, C8).
+- Nenhuma delas mantém o campo `disable-model-invocation` (C4).
+- Os três agents em `.claude/agents/` seguem o mesmo formato genérico, sem `tools:` ou outra especialização (C5).
+
+No Cursor especificamente, a conferência complementar é abrir o painel de skills do projeto e ver as seis listadas — o carregamento silencioso das três que falhavam é o defeito que esta spec fecha.
 
 ## No dia a dia
 

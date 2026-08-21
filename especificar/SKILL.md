@@ -1,7 +1,14 @@
 ---
 name: especificar
-description: Use antes de escrever ou modificar código quando o usuário começa uma demanda nova — "implementar", "criar", "adicionar", "bora fazer", "preciso de um script que...". Também quando ele pedir explicitamente para "especificar" ou "escrever a spec". Produz um plano específico e enxuto — critérios falsificáveis e a ordem de implementação, num arquivo só. Termina no gate humano: não invoca `codificar`. NÃO use para debugging do que já existe, pergunta conceitual, ou conserto de uma linha.
-disable-model-invocation: false
+description: >-
+  Use antes de escrever ou modificar código quando o usuário começa uma
+  demanda nova — "implementar", "criar", "adicionar", "bora fazer",
+  "preciso de um script que...". Também quando ele pedir explicitamente
+  para "especificar" ou "escrever a spec". Produz um plano específico e
+  enxuto — critérios falsificáveis e a ordem de implementação, num arquivo
+  só. Termina no gate humano: não invoca `codificar`. NÃO use para
+  debugging do que já existe, pergunta conceitual, ou conserto de uma
+  linha.
 ---
 
 # Especificar

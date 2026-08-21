@@ -1,7 +1,11 @@
 ---
 name: verificar
-description: Use quando `codificar` terminou uma demanda e o próximo passo é homologar aquela demanda — rodar só o que ela toca e obter um veredito independente contra a spec. NÃO roda a suíte completa e NÃO faz perguntas de arquitetura; isso é de `homologar`, no fim do desenvolvimento.
-disable-model-invocation: false
+description: >-
+  Use quando `codificar` terminou uma demanda e o próximo passo é
+  homologar aquela demanda — rodar só o que ela toca e obter um veredito
+  independente contra a spec. NÃO roda a suíte completa e NÃO faz
+  perguntas de arquitetura; isso é de `homologar`, no fim do
+  desenvolvimento.
 ---
 
 # Verificar

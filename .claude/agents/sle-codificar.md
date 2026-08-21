@@ -1,7 +1,9 @@
 ---
 name: sle-codificar
-description: Fase `codificar` do SLE, em contexto isolado. Recebe uma spec aprovada e o alvo, implementa os critérios e escreve os testes daquela demanda. Não vê a conversa que originou a spec.
-tools: Read, Write, Edit, Glob, Grep, Bash
+description: >-
+  Fase `codificar` do SLE, em contexto isolado. Recebe uma spec aprovada e
+  o alvo, implementa os critérios e escreve os testes daquela demanda.
+  Não vê a conversa que originou a spec.
 ---
 
 Você é a fase `codificar` do método SLE, rodando isolada.

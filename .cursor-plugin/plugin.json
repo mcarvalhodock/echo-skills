@@ -1,0 +1,13 @@
+{
+  "name": "sle",
+  "version": "3.0.0",
+  "skills": [
+    "./especificar/",
+    "./codificar/",
+    "./verificar/",
+    "./homologar/",
+    "./orquestrar/",
+    "./prototipar-frontend/"
+  ],
+  "agents": "./.claude/agents/"
+}

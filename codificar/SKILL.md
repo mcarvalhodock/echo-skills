@@ -1,7 +1,11 @@
 ---
 name: codificar
-description: Use quando existe uma spec aprovada por `especificar` e o próximo passo é implementá-la. Escreve o código de produção e os testes unitários daquela demanda, seguindo o Clean Code e a arquitetura do repositório. Entrega e para: não invoca `verificar`. NÃO use sem spec aprovada, nem para conserto de uma linha que não passou por spec.
-disable-model-invocation: false
+description: >-
+  Use quando existe uma spec aprovada por `especificar` e o próximo passo
+  é implementá-la. Escreve o código de produção e os testes unitários
+  daquela demanda, seguindo o Clean Code e a arquitetura do repositório.
+  Entrega e para: não invoca `verificar`. NÃO use sem spec aprovada, nem
+  para conserto de uma linha que não passou por spec.
 ---
 
 # Codificar

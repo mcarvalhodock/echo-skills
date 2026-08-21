@@ -39,13 +39,24 @@ DEFAULT_PRODUCTION_PATH_PATTERNS: tuple[str, ...] = (
 )
 
 
+def normalize(rel_path: str) -> str:
+    """Path relativo em forma canônica, sem o `./` de prefixo.
+
+    Aqui morava um `lstrip("./")`, que remove *qualquer* caractere do conjunto
+    `{'.', '/'}` do início: `.cursor-plugin/plugin.json` chegava aos padrões
+    como `cursor-plugin/plugin.json`, e nenhum path de produção com ponto
+    inicial casava. Em silêncio, porque a resposta é um booleano.
+    """
+    return rel_path.replace("\\", "/").removeprefix("./").lstrip("/")
+
+
 def is_production_path(rel_path: str, patterns: tuple[str, ...]) -> bool:
-    normalized = rel_path.replace("\\", "/").lstrip("./")
+    normalized = normalize(rel_path)
     return any(re.match(p, normalized) for p in patterns)
 
 
 def is_spec_change(rel_path: str) -> bool:
-    normalized = rel_path.replace("\\", "/").lstrip("./")
+    normalized = normalize(rel_path)
     if not normalized.startswith("docs/specs/"):
         return False
     return not any(

@@ -65,6 +65,7 @@ Lidos por `pr_spec_diff`. Aqui, "produção" é o que outros repositórios conso
 - `^tooling/`
 - `^scripts/`
 - `^(especificar|codificar|verificar|homologar)/`
+- `^\.cursor-plugin/`
 
 ## Nível de rigor esperado
 

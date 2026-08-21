@@ -6,7 +6,11 @@ para integração; aqui focamos na lógica de decisão.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from _ci_helpers import pr_spec_diff
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 class TestClassificacaoDePath:
@@ -55,3 +59,15 @@ class TestEvaluate:
             pr_spec_diff.DEFAULT_PRODUCTION_PATH_PATTERNS,
         )
         assert exit_code == 1
+
+
+class TestManifestoDesteRepositorio:
+    """Lê o manifesto real, e não um fixture: o que se mede é a declaração
+    deste repositório sobre o pacote do plugin."""
+
+    def test_pacote_do_plugin_conta_como_producao(self) -> None:
+        # spec:M10
+        patterns = pr_spec_diff.read_production_patterns_from_manifest(
+            REPO_ROOT / ".sle" / "manifesto.md"
+        )
+        assert pr_spec_diff.is_production_path(".cursor-plugin/plugin.json", patterns)
