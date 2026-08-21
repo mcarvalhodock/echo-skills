@@ -36,13 +36,13 @@ teve plugin local, não uma reprovação.
 - **spec:M14** — as seis skills (`especificar`, `codificar`, `verificar`,
   `homologar`, `orquestrar`, `prototipar-frontend`) aparecem em
   **Customize → Skills** vindas do plugin `sle`.
-  **Estado: pendente de observação humana.** O carregamento foi feito; o
-  painel, não foi visto. Seis presentes aprova; menos que seis reprova — e
-  reprovar aqui é o resultado da medição que a spec pediu, não licença para
-  mover as pastas.
+  **Estado: atendido em 2026-08-21.** Observação humana em nova janela do
+  Cursor após o reload: as seis skills apareceram em **Customize → Skills**
+  vindas do plugin `sle`, na descrição esperada. Contagem: seis presentes.
 
 - **spec:M15** — as três definições de agente (`sle-codificar`,
   `sle-verificar`, `sle-homologar`) aparecem em **Customize → Agents** vindas
   do plugin `sle`.
-  **Estado: pendente de observação humana.** Mesmo raciocínio de M14: três
-  presentes aprova, menos que três reprova.
+  **Estado: atendido em 2026-08-21.** Observação humana na mesma sessão de
+  M14: as três definições apareceram em **Customize → Agents** vindas do
+  plugin `sle`, na descrição esperada. Contagem: três presentes.
